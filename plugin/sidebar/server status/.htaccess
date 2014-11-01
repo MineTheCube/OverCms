@@ -1,0 +1,4 @@
+<Files "query.php"> 
+     Order Deny,Allow 
+     Allow from All 
+</Files>

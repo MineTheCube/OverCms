@@ -1,0 +1,40 @@
+  <body>
+
+    <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">{NAME}</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+          <!-- %NAVBAR% -->
+            <!-- %SINGLE% -->
+            <li class="{ACTIVE_CURRENT}"><a href="{HREF}">{TITLE}</a></li>
+            <!-- %SINGLE% -->
+            <!-- %CHILD_START% -->
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">{TITLE} <span class="caret"></span></a>
+              <ul class="dropdown-menu" role="menu">
+              <!-- %CHILD_START% -->
+              <!-- %CHILD_SINGLE% -->
+              <li><a href="{HREF}">{TITLE}</a></li>
+              <!-- %CHILD_SINGLE% -->
+              <!-- %CHILD_END% -->
+              </ul>
+            </li>
+            <!-- %CHILD_END% -->
+          <!-- %NAVBAR% -->
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li class="{USER_1_ACTIVE_CURRENT}"><a href="{USER_1_HREF}">{USER_1_TITLE}</a></li>
+            <li class="{USER_2_ACTIVE_CURRENT}"><a href="{USER_2_HREF}">{USER_2_TITLE}</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>

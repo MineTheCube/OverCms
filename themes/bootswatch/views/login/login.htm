@@ -1,0 +1,35 @@
+<!-- %ALERT_ERROR% -->
+  <div class="alert alert-danger" role="alert">%MESSAGE%</div>
+<!-- %ALERT_ERROR% -->
+
+<form class="form-horizontal" role="form" method="post">
+  <div class="form-group">
+    <label class="col-sm-3 control-label">{@USERNAME}</label>
+    <div class="col-sm-9">
+      <input name="username" type="text" class="form-control" placeholder="{@USERNAME}" value="{$post username}" required>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-3 control-label">{@PASSWORD}</label>
+    <div class="col-sm-9">
+      <input name="password" type="password" class="form-control" placeholder="{@PASSWORD}" required>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-sm-offset-3 col-sm-9">
+      <div class="checkbox">
+        <label>
+          <input name="remember" type="checkbox"> {@BTN_REMEMBER}
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-sm-offset-3 col-sm-9">
+      <input type="hidden" name="send" class="hidden" value="1">
+      <input type="hidden" name="token" class="hidden" value="%TOKEN%">
+      <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-ok"></span> &nbsp;{@BTN_LOGIN}</button>
+      <a class="btn btn-default" href="{URL_RECOVERY}"><span class="glyphicon glyphicon-remove"></span> &nbsp;{@BTN_FORGOT_PASSWORD}</a>
+    </div>
+  </div>
+</form>

@@ -1,0 +1,3 @@
+<FilesMatch "(?<!\.png|\.jpg|\.jpeg)$">
+    Deny from all
+</FilesMatch>
