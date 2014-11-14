@@ -8,18 +8,44 @@ class App {
     }
 
     public function init() {
-        $tables = $this->query('SELECT name FROM sqlite_master WHERE type="table"');
-        if ($tables === false)
-            $this->throwError('ERROR_SQLITE_INCORRECT');
-        if (count($tables->fetchAll(PDO::FETCH_ASSOC)) == 0) {
-            $tools = $this->model('Tools');
-            $install = $tools->executeSqlFile( DATA.'install.sql' );
-            if ($install === false)
+        $dbLang = INSTALL.DATABASE.'-'.LANGUAGE.'.sql';
+        $dbDefault = INSTALL.DATABASE.'-en_EN.sql';
+        if (DATABASE == 'mysql') {
+            $tables = $this->query('SHOW TABLES LIKE "cms\_%"');
+            if ($tables === false)
+                $this->throwError('ERROR_MYSQL_INCORRECT');
+            if (count($tables->fetchAll(PDO::FETCH_ASSOC)) == 0) {
+                $tools = $this->model('Tools');
+                if (file_exists($dbLang))
+                    $install = $tools->executeSqlFile($dbLang);
+                else if (file_exists($dbDefault))
+                    $install = $tools->executeSqlFile($dbDefault);
+                else
+                    $this->throwError('ERROR_MYSQL_MISSING_INSTALL_FILE');
+                if ($install === false)
+                    $this->throwError('ERROR_MYSQL_INCORRECT');
+            }
+        } else if (DATABASE == 'sqlite') {
+            $tables = $this->query('SELECT name FROM sqlite_master WHERE type="table"');
+            if ($tables === false)
                 $this->throwError('ERROR_SQLITE_INCORRECT');
+            if (count($tables->fetchAll(PDO::FETCH_ASSOC)) == 0) {
+                $tools = $this->model('Tools');
+                if (file_exists($dbLang))
+                    $install = $tools->executeSqlFile($dbLang);
+                else if (file_exists($dbDefault))
+                    $install = $tools->executeSqlFile($dbDefault);
+                else
+                    $this->throwError('ERROR_SQLITE_MISSING_INSTALL_FILE');
+                if ($install === false)
+                    $this->throwError('ERROR_SQLITE_INCORRECT');
+            }
         }
+        return false;
     }
     
     public function query($sql, $params = null) {
+        
         if ($params == null) {
             $result = $this->getDatabase()->query($sql);
         }
@@ -35,16 +61,39 @@ class App {
     
     private function getDatabase() {
         if ($this->db === null) {
-            if (extension_loaded('pdo_sqlite')) {
-                try {
-                    $dsn = 'sqlite:' . DATA . 'database.sql';
-                    $this->db = new PDO($dsn);
-                } catch (Exception $e) {
-                    $this->throwError('ERROR_DATABASE');
+            $config = new Config;
+            $type = $config->get('database->type', 'sqlite');
+            if ($type == 'mysql') {
+                if (extension_loaded('pdo_mysql')) {
+                    $host = $config->get('database->host');
+                    $dbname = $config->get('database->dbname');
+                    $charset = $config->get('database->charset', 'utf8');
+                    $user = $config->get('database->user');
+                    $password = $config->get('database->password');
+                    $dsn = "$type:host=$host;dbname=$dbname;charset=$charset";
+                    try {
+                        $this->db = new PDO($dsn, $user, $password);
+                        return $this->db;
+                    } catch (Exception $e) {
+                        $this->throwError('ERROR_MYSQL_DATABASE');
+                    }
+                } else {
+                    $this->throwError('ERROR_MYSQL_MISSING');
                 }
-            } else {
-                $this->throwError('ERROR_SQLITE_MISSING');
+            } else if ($type == 'sqlite') {
+                if (extension_loaded('pdo_sqlite')) {
+                    $dsn = 'sqlite:' . DATA . 'database.sql';
+                    try {
+                        $this->db = new PDO($dsn);
+                        return $this->db;
+                    } catch (Exception $e) {
+                        $this->throwError('ERROR_SQLITE_DATABASE');
+                    }
+                } else {
+                    $this->throwError('ERROR_SQLITE_MISSING');
+                }
             }
+            $this->throwError('ERROR_CONFIG_DATABASE');
         }
         return $this->db;
     }
@@ -66,8 +115,6 @@ class App {
             return false;
         }
         if ((time()-600) >= $tokenTime) {
-            echo 'Token Expired';
-            die();
             return false;
         }
         return true;
@@ -107,28 +154,8 @@ class App {
             $this->view($page, $content);
             return true;
         } else if ($page->get('type') == 'plugin') {
-            $files = glob(PLUGIN . 'page/*', GLOB_ONLYDIR | GLOB_MARK );
-            foreach($files as $file) {
-                if (file_exists($file . 'config.cfg.php')) {
-                    $pluginConfig = new Config($file . 'config.cfg.php');
-                    if ( $page->get('type_data') == $pluginConfig->get('plugin->name') and $pluginConfig->get('plugin->type') == 'page' ) {
-                        define('PATH_PLUGIN', $file);
-                        define('ABS_PATH_PLUGIN', '/' . $file);
-                    }
-                }
-            }
-            if (defined('PATH_PLUGIN') and file_exists(PATH_PLUGIN . 'core' . EX)) {
-                $file = $this->needFile(PATH_PLUGIN . 'core' . EX);
-                require_once($file);
-                unset($files, $file);
-                if (empty($content))
-                    $content = 'Invalid data.';
-                $this->view($page, $content);
-                return true;
-            } else {
-                $this->throwError('ERROR_MISSING_PLUGIN', array('plugin' => $page->get('type_data') ) );
-
-            }
+            $this->view($page, '%PAGE_CONTENT%');
+            return true;
         }
         $this->throwError('UNKNOW_ERROR');
         return false;
@@ -143,20 +170,23 @@ class App {
     }
 
     protected function view($page, $content) {
-        require_once VIEW . 'page' . EX;
-        return true;
-    }
-
-    public function render($html, $page) {
-        require_once MODEL . 'translate' . EXC;
         require_once MODEL . 'view' . EXF;
-        return view($html, $page);
+        echo view($content, $page);
+        return true;
     }
 
     public function model($model) {
         require_once MODEL . strtolower($model) . EXC;
         $model = ucfirst($model);
         return new $model();
+    }
+
+    public function package($package) {
+        if (file_exists(PACKAGE . strtolower($package) . '/core.php')) {
+            require_once PACKAGE . strtolower($package) . '/core.php';
+            return true;
+        }
+        return false;
     }
 
     public function loadModels() {

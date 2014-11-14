@@ -13,8 +13,10 @@ Options +FollowSymLinks -MultiViews -Indexes
 
 <IfModule mod_rewrite.c>
   RewriteEngine on
-# Try to remove # at line below if you have error no 500:
+# Try to remove # at line below if you have error 404 or 500:
 # RewriteBase /
+# And if you have installed CMS into a folder:
+# RewriteBase /folder
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ ./index.php [L,QSA]

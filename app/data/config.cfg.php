@@ -2,16 +2,24 @@
 {
 	"cms": {
 		"version": "0.3.0",
-		"state": "Beta"
+		"state": "Beta",
+		"compatible": {
+            "header": "0.3.0",
+            "page": "0.3.0",
+            "sidebar": "0.3.0"
+        }
 	},
 	"user": {
 		"settings": {
 			"language": "fr_FR",
-			"theme": "bootswatch",
+			"theme": "NavyBlue",
 			"debug": true,
 			"date_format": "d\/m\/Y \\- H:i",
+			"date_format_short": "d\/m\/Y",
 			"timezone": "Europe\/Paris",
-			"urlrewrite": true
+			"urlrewrite": true,
+			"sidebar": false,
+			"verifymail": false
 		},
 		"info": {
 			"name": "OneCraft",
@@ -29,6 +37,14 @@
 				"register": "<span class='glyphicon glyphicon-pencil'><\/span> &nbsp;"
 			}
 		}
-	}
+	},
+    "database": {
+        "type": "sqlite",
+        "host": "***",
+        "user": "***",
+        "password": "***",
+        "dbname": "***",
+        "charset": "utf8"
+    }
 }
 */?>

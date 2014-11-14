@@ -1,1 +1,0 @@
-<?php/*{  "plugin": {    "name": "blog",    "version": "1.0.0"  }}*/?>

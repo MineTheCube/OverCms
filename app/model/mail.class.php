@@ -5,8 +5,30 @@ class Mail {
     public function __construct() {
     }
 
-    public function send($toEmail, $fromEmail, $fromName, $subject, $message, $html = false) {
-    
+    public function send($toEmail, $subject, $message, $html = false, $fromEmail = null, $fromName = null) {
+        
+        $config = new Config;
+        if ($fromEmail === null) {
+            $fromEmail = $config->get('user->info->email', false);
+            if ($fromEmail == false) {
+                throw new Exception('EMAIL_INCORRECT');
+                return false;
+            }
+        }
+        
+        if ($fromName === null) {
+            $fromName = $config->get('user->info->name', false);
+            if ($fromName == false) {
+                throw new Exception('INVALID_DATA');
+                return false;
+            }
+        }
+        
+        if (empty($fromName)) {
+            throw new Exception('INVALID_DATA');
+            return false;
+        }
+        
         if (!preg_match('/^[[:alnum:][:punct:]]{3,32}@[[:alnum:]-.$nonASCII]{3,32}\.[[:alpha:].]{2,5}$/', $toEmail)) {
             throw new Exception('EMAIL_INCORRECT');
             return false;

@@ -34,6 +34,7 @@ define('CORE', APP . 'core/');
 define('DATA', APP . 'data/');
 define('CONTROLLER', APP . 'controller/');
 define('MODEL', APP . 'model/');
+define('PACKAGE', APP . 'package/');
 define('VIEW', APP . 'view/');
 define('LANG', APP . 'lang/');
 define('PLUGIN', 'plugin/');
@@ -46,6 +47,7 @@ define('EX', '.php');
 define('EXC', '.class.php');
 define('EXF', '.function.php');
 define('EXT', '.htm');
+define('CONFIG', 'config.cfg.php');
 // Unique Key
 define('UNIQUE_KEY', md5($_SERVER['GATEWAY_INTERFACE'].$_SERVER['SERVER_ADDR'].$_SERVER['SERVER_SOFTWARE'].'#%*'));
 /* ============================== */
@@ -56,13 +58,16 @@ define('UNIQUE_KEY', md5($_SERVER['GATEWAY_INTERFACE'].$_SERVER['SERVER_ADDR'].$
 require_once ( MODEL . 'config' . EXC );
 $config = new Config;
 if ($config->get('user->settings->debug', false)) {
-  error_reporting(E_ALL & ~E_NOTICE);
+    define('DEBUG', true);
+    error_reporting(E_ALL & ~E_NOTICE);
 } else {
-  error_reporting(0);
+    define('DEBUG', false);
+    error_reporting(0);
 }
 // Define constants depending on config
+define('DATABASE', $config->get('database->type', 'sqlite'));
 define('LANGUAGE', $config->get('user->settings->language', 'en_US'));
-define('THEME', $config->get('user->settings->theme', 'bootswatch'));
+define('CURRENT_THEME', $config->get('user->settings->theme', 'bootswatch'));
 define('DATE_FORMAT', $config->get('user->settings->date_format', 'd/m/Y \- H:i'));
 date_default_timezone_set($config->get('user->settings->timezone', 'Europe/London'));
 $urlrewrite = $config->get('user->settings->urlrewrite');

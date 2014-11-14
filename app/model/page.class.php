@@ -19,7 +19,7 @@ class Page {
     public function __construct() {
     }
     
-    public function setup( $data, $type = null ) {
+    public function setup( $data = REQUEST_SLUG, $type = null ) {
         
         $app = new App;
         
@@ -28,10 +28,17 @@ class Page {
         }
         
         // Get database
-        $rows = $app->query('SELECT * FROM cms_pages where '.$type.' = ?', array($data))->fetchAll(PDO::FETCH_ASSOC);
+        $rows1 = $app->query('SELECT * FROM cms_pages where '.$type.' = ?', array($data))->fetchAll(PDO::FETCH_ASSOC);
+        $rows2 = $app->query('SELECT * FROM cms_public_pages where '.$type.' = ?', array($data))->fetchAll(PDO::FETCH_ASSOC);
         
-        if (count($rows) == 1) {
-            $page = $rows[0];
+        if (count($rows1) == 1) {
+            $page = $rows1[0];
+            foreach($page as $key => $value) {
+                $this->$key = $value;
+            }
+            return true;
+        } else if (count($rows2) == 1) {
+            $page = $rows2[0];
             foreach($page as $key => $value) {
                 $this->$key = $value;
             }
@@ -65,10 +72,14 @@ class Page {
         }
         
         // Get database
-        $rows = $app->query('SELECT * FROM cms_pages where ' . $req, $data)->fetchAll(PDO::FETCH_ASSOC);
+        $rows1 = $app->query('SELECT * FROM cms_public_pages where ' . $req, $data)->fetchAll(PDO::FETCH_ASSOC);
+        $rows2 = $app->query('SELECT * FROM cms_pages where ' . $req, $data)->fetchAll(PDO::FETCH_ASSOC);
         
-        if (count($rows) == 1) {
-            $page = $rows[0];
+        if (count($rows1) == 1) {
+            $page = $rows1[0];
+            return $page;
+        } else if (count($rows2) == 1) {
+            $page = $rows2[0];
             return $page;
         } else {
             return false;
@@ -78,7 +89,7 @@ class Page {
     
     public function getParents() {
         $app = new App;
-        $page_req = $app->query('SELECT id, title, slug, home, is_parent, parent_id FROM cms_pages where parent_id = 0 AND state = 0 ORDER BY position');
+        $page_req = $app->query('SELECT id, title, slug, home, is_parent, parent_id FROM cms_public_pages where parent_id = 0 AND state = 0 ORDER BY position');
         $parents = $page_req->fetchAll();
         return $parents;
     }
@@ -86,7 +97,7 @@ class Page {
     public function getChilds($parent_id) {
         $app = new App;
         if (is_numeric($parent_id) or $parent_id == 0) {
-            $page_req = $app->query('SELECT * FROM cms_pages where parent_id = ? ORDER BY position', $parent_id);
+            $page_req = $app->query('SELECT * FROM cms_public_pages where parent_id = ? ORDER BY position', $parent_id);
             $childs = $page_req->fetchAll();
             return $childs;
         } else {
@@ -98,7 +109,7 @@ class Page {
     public function getSidebars() {
         $app = new App;
         $page_req = $app->query('SELECT * FROM cms_sidebars where 1 ORDER BY position');
-        $parents = $page_req->fetchAll();
+        $parents = $page_req->fetchAll(PDO::FETCH_ASSOC);
         return $parents;
     }
 
@@ -106,18 +117,22 @@ class Page {
         if (preg_match('/^([a-z_\-\s0-9\.\/]+$)/', $req)) {
             $app = new App;
             if ($isChild === null) {
-                $se_req = $app->query('SELECT slug FROM cms_pages WHERE slug = ?', $req);
+                $public_req = $app->query('SELECT slug FROM cms_public_pages WHERE slug = ?', $req);
+                $pages_req = $app->query('SELECT slug FROM cms_pages WHERE slug = ?', $req);
             } else if ($isChild === true) {
-                $se_req = $app->query('SELECT slug FROM cms_pages WHERE slug = ? AND parent_id != 0 AND is_parent = 0', $req);
+                $public_req = $app->query('SELECT slug FROM cms_public_pages WHERE slug = ? AND parent_id != 0 AND is_parent = 0', $req);
             } else if ($isChild === false and $isParent === false) {
-                $se_req = $app->query('SELECT slug FROM cms_pages WHERE slug = ? AND parent_id = 0 AND is_parent = 0', $req);
+                $public_req = $app->query('SELECT slug FROM cms_public_pages WHERE slug = ? AND parent_id = 0 AND is_parent = 0', $req);
+                $pages_req = $app->query('SELECT slug FROM cms_pages WHERE slug = ?', $req);
             } else if ($isChild === false and $isParent === true) {
-                $se_req = $app->query('SELECT slug FROM cms_pages WHERE slug = ? AND parent_id = 0 AND is_parent = 1', $req);
+                $public_req = $app->query('SELECT slug FROM cms_public_pages WHERE slug = ? AND parent_id = 0 AND is_parent = 1', $req);
             } else {
                 throw new Exception('INVALID_DATA'); 
                 return true;
             }
-            $rows = $se_req->fetchAll(PDO::FETCH_ASSOC);
+            $rows = $public_req->fetchAll(PDO::FETCH_ASSOC);
+            if (!empty($pages_req))
+                $rows = $rows + $pages_req->fetchAll(PDO::FETCH_ASSOC);
             if (count($rows) >= 1) {
                 return true;
             }
@@ -127,7 +142,7 @@ class Page {
 
     public function getHomePage($value) {
         $app = new App;
-        $rows = $app->query('SELECT * FROM cms_pages WHERE home = 1')->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $app->query('SELECT * FROM cms_public_pages WHERE home = 1')->fetchAll(PDO::FETCH_ASSOC);
         $hp = $rows[0];
         if (count($rows) == 0) {
             return false;
@@ -167,7 +182,7 @@ class Page {
             return false;
         }
         
-        $max_req = $app->query('SELECT MAX(id) as MAX FROM cms_pages WHERE 1');
+        $max_req = $app->query('SELECT MAX(id) as MAX FROM cms_public_pages WHERE 1');
         $max = $max_req->fetch();
         $id = $max['MAX'] + 1;
         
@@ -208,7 +223,7 @@ class Page {
             $parameters[] = $value;
         }
 
-        $query_result = $app->query('INSERT INTO cms_pages(id, title, slug, home, is_parent, parent_id, p_view, p_edit, content, type, type_data, state, header) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $parameters);
+        $query_result = $app->query('INSERT INTO cms_public_pages(id, title, slug, home, is_parent, parent_id, p_view, p_edit, content, type, type_data, state, header) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $parameters);
         
         return true;        
     }

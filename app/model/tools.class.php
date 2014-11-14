@@ -50,13 +50,12 @@ Class Tools {
             $result[1] = substr($data, $startIn, $endIn - $startIn);
             return $result;
         }
-        
         return false;
         
     }
 
     public function loadTextEditor($name = 'texteditor', $content = null) {
-        $texteditor = file_get_contents( THEMES . THEME . '/misc/texteditor.htm' );
+        $texteditor = file_get_contents( THEMES . CURRENT_THEME . '/misc/texteditor.htm' );
         $texteditor = str_replace( '%TEXT_EDITOR_NAME%', $name, $texteditor);
         $texteditor = str_replace( '%TEXT_EDITOR_CONTENT%', $content, $texteditor);
         return $texteditor;

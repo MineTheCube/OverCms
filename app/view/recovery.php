@@ -1,6 +1,6 @@
 <?php
 
-$html = file_get_contents(THEMES . THEME . '/views/recovery/recovery' . EXT);
+$html = file_get_contents(THEMES . CURRENT_THEME . '/views/recovery/recovery' . EXT);
 
 $matchError = $tools->textBetween($html, '%ALERT_ERROR%');
 $alertError = $matchError[1];

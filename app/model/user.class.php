@@ -9,6 +9,8 @@ class User {
     private $date_creation;
     private $permission;
     private $picture_url;
+    private $profil;
+    private $token;
     
     private $auth;
     private $picture;
@@ -26,7 +28,12 @@ class User {
         if (empty($username)) {
             if ($session->get('username') !== false) {
                 $username = $session->get('username');
-                $this->auth = true;
+                $rows = $app->query('SELECT * FROM cms_users where username = ?', array($username))->fetchAll(PDO::FETCH_ASSOC);
+                if (count($rows) == 0) {
+                    $this->logout();
+                } else {
+                    $this->auth = true;
+                }
             } else {
                 
                 $canAutoLogin = false;
@@ -63,6 +70,8 @@ class User {
                     $this->date_creation = 0;
                     $this->permission = 0;
                     $this->picture_url = "";
+                    $this->profil = "";
+                    $this->token = "";
                     $this->picture = HTTP_ROOT . AVATAR . '0' . '.png';
                     return false;
                 }
@@ -150,29 +159,52 @@ class User {
         $id = $max['MAX'] + 1;
         
         $password = hash('sha256', $password . '^#$');
+        $config = new Config;
         
-        $this->id = $id;
-        $this->username = $username;
-        $this->password = $password;
-        $this->email = $email;
-        $this->date_creation = time();
-        $this->permission = 1;
-        $this->picture_url = "";
-        
-        $this->auth = true;
-        $this->picture = HTTP_ROOT . AVATAR . '0' . '.png';
+        $user_id = $id;
+        $user_username = $username;
+        $user_password = $password;
+        $user_email = $email;
+        $user_date_creation = time();
+        $user_permission = 1;
+        $user_picture_url = "";
+        $user_profil = "";
+        if ($config->get('user->settings->verifymail', false)) {
+            $token = new StdClass();
+            $token->key = substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 20);
+            $token->type = 'confirm-mail'; 
+            $token->last = time(); 
+            $user_token = json_encode($token);
+            
+            $page = new Page;
+            $mail = new Mail;
+            $page_register = $page->getPage(array('type' => 'native', 'type_data' => 'register' ));
+            $url = URL . ABS_ROOT;
+            $url .= $page_register['slug'];
+            $url .= '/' . $user_id . '/' . $token->key;
+            $link = '<a href="' . $url . '">' . $url . '</a>';
+            $subject = Translate::get('EMAIL_CONFIRMATION_SUBJECT');
+            $message = Translate::get('EMAIL_CONFIRMATION_INSTRUCTIONS');
+            $message = str_replace('%link%', $link, $message);
+            $mail->send($email, $subject, nl2br($message), true);
+
+        } else {
+            $user_token = '';
+        }
         
         $parameters = array (
-            '0' => $this->id,
-            '1' => $this->username,
-            '2' => $this->password,
-            '3' => $this->email,
-            '4' => $this->date_creation,
-            '5' => $this->permission,
-            '6' => $this->picture_url
+            '0' => $user_id,
+            '1' => $user_username,
+            '2' => $user_password,
+            '3' => $user_email,
+            '4' => $user_date_creation,
+            '5' => $user_permission,
+            '6' => $user_picture_url,
+            '7' => $user_profil,
+            '8' => $user_token
         );
 
-        $query_result = $app->query('INSERT INTO cms_users(id, username, password, email, date_creation, permission, picture_url) VALUES (?, ?, ?, ?, ?, ?, ?)', $parameters);
+        $query_result = $app->query('INSERT INTO cms_users(id, username, password, email, date_creation, permission, picture_url, profil, token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', $parameters);
         
         return true;      
     }
@@ -182,17 +214,22 @@ class User {
         $app = new App;
         $session = new Session;
         
-        $rows = $app->query('SELECT id, username, password FROM cms_users WHERE username = ?', $username)->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $app->query('SELECT id, username, password, token FROM cms_users WHERE username = ?', $username)->fetchAll(PDO::FETCH_ASSOC);
         $user_get = $rows[0];
+        $token = json_decode($user_get['token']);
+        if (empty($token)) $token = new StdClass;
         
         if (count($rows) !== 1) {
             $error = 'NO_ACCOUNT_MATCHING';
             throw new Exception($error); 
             return false;
-        }
-        else if ($user_get['password'] !== hash('sha256', $password . '^#$')) {
+        } else if ($user_get['password'] !== hash('sha256', $password . '^#$')) {
             $error = 'PASSWORD_INCORRECT';
             throw new Exception($error); 
+            return false;
+        } else if (!empty($token->type) and $token->type !== 'recovery') {
+            $error = 'MAIL_NOT_CONFIRMED';
+            throw new Exception($error);
             return false;
         } else {
             $session->regen(true);
@@ -207,7 +244,7 @@ class User {
                 setCookie('b953e16cc92aea25727a626512196c8e', $cookieUsername, $date , '/');
             }
             return true;
-        }    
+        }
         
     }
     
@@ -220,58 +257,232 @@ class User {
         return true;
     }
     
+    public function validateToken($token) {
+        if ($this->id == 0)
+            return false;
+        $userToken = json_decode($this->token);
+        if (empty($userToken))
+            return false;
+        if (!empty($userToken->key) and $userToken->key == $token) {
+            $app = new App;
+            $result = $app->query('UPDATE cms_users SET token = "" WHERE id = ?', array($this->id));
+            return $result;
+        }
+        return false;
+    }
+    
+    public function generatePassword($user_id) {
+    
+        $page = new Page;
+        $app = new App;
+        $mail = new Mail;
+        $user = new User;
+        
+        $user->setup($user_id, 'id');
+        if ($user->get('id') == 0)
+            return false;
+    
+        $page_login = $page->getPage(array('type' => 'native', 'type_data' => 'login' ));
+        $url = URL . ABS_ROOT;
+        $url .= $page_login['slug'] . '/';
+        $password = substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 10);
+        $link = '<a href="' . $url . '">' . $url . '</a>';
+        $toEmail = $user->get('email');
+        $subject = Translate::get('EMAIL_NEW_PASSWORD_SUBJECT');
+        $message = Translate::get('EMAIL_NEW_PASSWORD_INSTRUCTIONS');
+        $message = str_replace('%password%', $password, $message);
+        $message = str_replace('%link%', $link, $message);
+        $mail->send($toEmail, $subject, nl2br($message), true);
+        $password = hash('sha256', $password . '^#$');
+        $app->query('UPDATE cms_users SET password = ? WHERE id = ?', array($password, $user->get('id')));
+        return true;
+    }
+    
     public function recovery($email) {
     
-        $app = new App;
-        $config = new Config;
         $page = new Page;
+        $app = new App;
+        $mail = new Mail;
         
         $rows = $app->query('SELECT * FROM cms_users WHERE email = ?', $email)->fetchAll(PDO::FETCH_ASSOC);
         $user_get = $rows[0];
+        $token = json_decode($user_get['token']);
+        if (empty($token)) $token = new StdClass;
         
         if (count($rows) != 1) {
             $error = 'EMAIL_UNKNOW';
             throw new Exception($error); 
             return false;
+        } else if (!empty($token->type) and $token->type !== 'recovery') {
+            $error = 'MAIL_NOT_CONFIRMED';
+            throw new Exception($error);
+            return false;
+        } else if (!empty($token->last) and $token->last > (time()-300)) {
+            $error = 'TOO_RECENT_RECOVERY';
+            throw new Exception($error);
+            return false;
         } else {
-            $mail = $app->model('mail');
             $page_recovery = $page->getPage(array('type' => 'native', 'type_data' => 'recovery' ));
             $url = URL . ABS_ROOT;
             $url .= $page_recovery['slug'];
-            $url .= '/' . md5( $user_get['password'] . $user_get['email'] . $user_get['date_creation'] ) . $user_get['id'] . '/';
+            $token = new StdClass();
+            $token->key = substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 20);
+            $token->type = 'recovery';
+            $token->last = time();
+            $user_token = json_encode($token);
+            $url .= '/' . $user_get['id'] . '/' . $token->key;
             $link = '<a href="' . $url . '">' . $url . '</a>';
             $toEmail = $email;
-            $fromEmail = $config->get('user->info->email');
-            $fromName = $config->get('user->info->name');
             $subject = Translate::get('EMAIL_RESET_SUBJECT');
             $message = Translate::get('EMAIL_RESET_INSTRUCTIONS');
             $message = str_replace('%link%', $link, $message);
-            $mail->send($toEmail, $fromEmail, $fromName, $subject, nl2br($message), true);
+            $mail->send($toEmail, $subject, nl2br($message), true);
+            $app->query('UPDATE cms_users SET token = ? WHERE id = ?', array($user_token, $user_get['id']));
             return true;
         }    
         
     }
     
-    public function update($user_id, $type, $valueA = null, $valueB = null, $valueC = null) {
-    
+    public function update($user_id, $type, $valueA = null, $valueB = null, $valueC = null, $valueD = null) {
+        if (!is_array($valueA))
+            $valueA = trim($valueA);
+        $valueB = trim($valueB);
+        $valueC = trim($valueC);
+        $valueD = trim($valueD);
+        
         if ($type == 'password') {
-            if ($valueA != $valueB) {
+            $app = new App;
+            $rows = $app->query('SELECT id, username, password FROM cms_users WHERE id = ?', $user_id)->fetchAll(PDO::FETCH_ASSOC);
+            $user_get = $rows[0];
+            if ($user_get['password'] != hash('sha256', $valueA . '^#$')) {
+                $error = 'OLD_PASSWORD_INCORRECT';
+                throw new Exception($error); 
+                return false;
+            }
+            if ($valueC != $valueB) {
                 $error = 'PASSWORD_NOT_THE_SAME';
                 throw new Exception($error); 
                 return false;
-            } else if (strlen($valueA) < 5 OR strlen($valueA) > 32) {
+            } else if (strlen($valueB) < 5 OR strlen($valueB) > 32) {
                 throw new Exception('PASSWORD_LENGHT'); 
                 return false;
             } else {
-                $password = hash('sha256', $valueA . '^#$');
+                $password = hash('sha256', $valueB . '^#$');
                 $app = new App;
                 $app->query('UPDATE cms_users SET password = ? WHERE id = ?', array($password, $user_id));
                 return true;
             }
+        } else if ($type == 'email') {
+            $app = new App;
+            $rows = $app->query('SELECT id, username, password FROM cms_users WHERE email = ?', $valueA)->fetchAll(PDO::FETCH_ASSOC);
+            $user_get = $rows[0];
+            if ($valueA != $valueB) {
+                $error = 'EMAIL_NOT_THE_SAME';
+                throw new Exception($error); 
+                return false;
+            } else if (!preg_match('/^[[:alnum:][:punct:]]{3,32}@[[:alnum:]-.$nonASCII]{3,32}\.[[:alpha:].]{2,5}$/', $valueA)) {
+                throw new Exception('EMAIL_INCORRECT'); 
+                return false;
+            } else if (count($user_get) > 0) {
+                throw new Exception('ALREADY_EMAIL'); 
+                return false;
+            } else {
+                $config = new Config;
+                $mail = new Mail;
+                $app = new App;
+                if ($config->get('user->settings->verifymail', false)) {
+                    $token = new StdClass();
+                    $token->key = substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 20);
+                    $token->type = 'new-mail'; 
+                    $token->last = time(); 
+                    $user_token = json_encode($token);
+                    
+                    $page = new Page;
+                    $page_register = $page->getPage(array('type' => 'native', 'type_data' => 'register' ));
+                    $url = URL . ABS_ROOT;
+                    $url .= $page_register['slug'];
+                    $url .= '/' . $user_id . '/' . $token->key;
+                    $link = '<a href="' . $url . '">' . $url . '</a>';
+                    $subject = Translate::get('EMAIL_CONFIRMATION_SUBJECT');
+                    $message = Translate::get('EMAIL_CONFIRMATION_INSTRUCTIONS');
+                    $message = str_replace('%link%', $link, $message);
+                    $mail->send($valueA, $subject, nl2br($message), true);
+                    $app->query('UPDATE cms_users SET token = ? WHERE id = ?', array($user_token, $user_id));
+
+                }
+                $app->query('UPDATE cms_users SET email = ? WHERE id = ?', array($valueA, $user_id));
+                return true;
+            }
+        } else if ($type == 'profil') {
+            $app = new App;
+            $profil = $app->query('SELECT profil FROM cms_users WHERE id = ?', $user_id)->fetchAll(PDO::FETCH_ASSOC);
+            $profil = $profil[0]['profil'];
+            if (!empty($profil))
+                $profil = json_decode($profil);
+            else
+                $profil = new StdClass();
+            $placeholder = Translate::get('BIRTHDAY_PLACEHOLDER', 'YYYY/MM/DD');
+            if (!empty($valueA) or $valueA == $placeholder) {
+                if (!preg_match('/^(19|20)[0-9]{2}\/[0-9]{2}\/[0-9]{2}$/', $valueA) or strtotime($valueA) >= time()) {
+                    $error = 'INCORRECT_BIRTHDAY';
+                    throw new Exception($error); 
+                    return false;
+                } else {
+                    $date = explode('/', $valueA);
+                    if (checkdate($date[1], $date[2], $date[0])) {
+                        $profil->birthday = implode('-', $date);
+                    } else {
+                        $error = 'INCORRECT_BIRTHDAY';
+                        throw new Exception($error); 
+                        return false;
+                    }
+                }
+            } else {
+                unset($profil->birthday);
+            }
+            if (!empty($valueB)) {
+                if ($valueB == 'man') {
+                    $profil->gender = 'man';
+                    $update = true;
+                } else if ($valueB == 'woman') {
+                    $profil->gender = 'woman';
+                }
+            } else {
+                unset($profil->gender);
+            }
+            if (!empty($valueC)) {
+                if (!preg_match('/^[\p{L}- ]{3,30}$/u', $valueC)) {
+                    $error = 'INCORRECT_CITY';
+                    throw new Exception($error); 
+                    return false;
+                } else {
+                    $profil->city = $valueC;
+                }
+            } else {
+                unset($profil->city);
+            }
+            if (!empty($valueD)) {
+                if (!preg_match('/^[\p{L}- ]{3,30}$/u', $valueD)) {
+                    $error = 'INCORRECT_COUNTRY';
+                    throw new Exception($error); 
+                    return false;
+                } else {
+                    $profil->country = $valueD;
+                }
+            } else {
+                unset($profil->country);
+            }
+            $json = json_encode($profil);
+            $result = $app->query('UPDATE cms_users SET profil = ? WHERE id = ?', array($json, $user_id));
+            if ($result) {
+                return true;
+            } else {
+                return false;
+            }
         } else if ($type == 'avatar') {
         
             if (!is_array( $valueA ) ) {
-                
+            
                 $src = $valueA;
                 if (strpos($src, 'http://') === false) {
                     throw new Exception('INVALID_URL');
@@ -322,7 +533,7 @@ class User {
                 if ( file_exists( AVATAR . $user_id . '.png' )) { unlink( AVATAR . $user_id . '.png'  ); }
                 if ( file_exists( AVATAR . $user_id . '.jpg' )) { unlink( AVATAR . $user_id . '.jpg'  ); }
                 if ( file_exists( AVATAR . $user_id . '.jpeg')) { unlink( AVATAR . $user_id . '.jpeg' ); }
-            
+                return true;
             
             } else {
         
@@ -405,4 +616,132 @@ class User {
         }
         
     }
+  
+    public function getStatus($profil_id) {
+        
+        $app = new App;
+        
+        if (!is_numeric($profil_id) and !ctype_digit($profil_id) or $profil_id <= 0) {
+            throw new Exception('INVALID_DATA'); 
+            return false;
+        }
+        
+        // Get database
+        $comments = $app->query('SELECT * FROM cms_user_status WHERE type="comment" AND state = 0 AND profil_id = ? ORDER BY date DESC', $profil_id);
+        return $comments;
+    }
+
+    public function addStatus($content, $author_id, $profil_id, $date = 0, $state = 0) {
+    
+        $content = trim($content);
+    
+        if (strlen($content) < 10 OR strlen($content) > 500) {
+            throw new Exception('STATUS_LENGHT'); 
+            return false;
+        }
+        
+        if (substr_count( $content, "\n" ) > 5) {
+            throw new Exception('TOO_MUCH_NEWLINE'); 
+            return false;
+        }
+
+        if (!is_numeric($author_id) or $author_id <= 0) {
+            throw new Exception('INVALID_DATA'); 
+            return false;
+        }
+
+        if ((!is_numeric($date) or $date <= 0) and $date !== 0) {
+            throw new Exception('INVALID_DATA'); 
+            return false;
+        }
+        
+        $app = new App;
+        
+        $rows = $app->query('SELECT id FROM cms_users WHERE id = ?', $profil_id)->fetchAll(PDO::FETCH_ASSOC);
+        $userExist = count($rows);
+
+        if ($userExist !== 1) {
+            throw new Exception('UNKNOW_USER'); 
+            return false;
+        }
+        
+        $lastPost_req = $app->query('SELECT MAX(date) as LAST FROM cms_user_status WHERE author_id = ?', $author_id);
+        $lastPost = $lastPost_req->fetch();
+        $lastPost = $lastPost['LAST'];
+
+        if ($lastPost > time()-60) {
+            throw new Exception('TOO_RECENT_STATUS'); 
+            return false;
+        }
+        
+        $max_req = $app->query('SELECT MAX(id) as MAX FROM cms_user_status WHERE 1');
+        $max = $max_req->fetch();
+        $id = $max['MAX'] + 1;
+        
+        if ($date == 0) {
+            $date = time();
+        }
+            
+        $array = array(
+            'id' => $id,
+            'type' => 'comment',
+            'author_id' => $author_id,
+            'profil_id' => $profil_id,
+            'content' => $content,
+            'state' => $state,
+            'date' => $date
+        
+        );
+        
+        $parameters = array();
+        foreach($array as $key => $value) {
+            $parameters[] = $value;
+            if ( isset($query1) ) {
+                $query1 .= ', ' . $key;
+                $query2 .= ', ?';
+            } else {
+                $query1 .= $key;
+                $query2 .= '?';
+            }
+        }
+ 
+        $query_result = $app->query('INSERT INTO cms_user_status('.$query1.') VALUES ('.$query2.')', $parameters);
+        return true;
+
+    }
+  
+    public function deleteStatus($id, $profil_id, $checkUserPerm = false) {
+        $app = new App;
+        $rows = $app->query('SELECT * FROM cms_user_status WHERE id = ?', $id)->fetchAll(PDO::FETCH_ASSOC);
+        if (count($rows) !== 1) {
+            throw new Exception('UNKNOW_STATUS'); 
+            return false;
+        }
+        
+        $query = $rows[0];
+        if ($query['profil_id'] != $profil_id) {
+            throw new Exception('UNKNOW_STATUS'); 
+            return false;
+        }
+        
+        if ($checkUserPerm) {
+            $user = new User;
+            $page = new Page;
+            $user->setup();
+            $page->setup();
+            if ($user->get('permission') < $page->get('p_edit') and $user->get('id') != $query['profil_id'] and $user->get('id') != $query['author_id']) {
+                throw new Exception('NO_PERMISSION'); 
+                return false;
+            }
+        }
+        
+        $rows = $app->query('DELETE FROM cms_user_status WHERE id = ?', $id);
+        if ($rows->rowCount() == 1) {
+            return true;
+        } else {
+            throw new Exception('UNKNOW_STATUS'); 
+            return false;
+        }
+    }
+
 }

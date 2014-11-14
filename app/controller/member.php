@@ -11,10 +11,16 @@ if (isset($_POST['member'])) {
     }
 }
 
+$viewer = new User;
+$viewer->setup();
+$userAuth = $viewer->auth();
+
+$userFound = true;
 if ( empty( $request['args'] ) ) {
     $user_exist = $user->setup();
     if ($user_exist === false) {
-        $error = '{@' . 'USER_NEED_SEARCH' . '}';
+        $alert = '{@' . 'USER_NEED_SEARCH' . '}';
+        $userFound = false;
     }
 } else {
     $user_req = explode('/', $request['args']);
@@ -24,9 +30,31 @@ if ( empty( $request['args'] ) ) {
     }
     $user_exist = $user->setup($username);
     if ($user_exist === false) {
-        $error = '{@' . 'USER_UNKNOWN' . '}';
+        $alert = '{@' . 'USER_UNKNOWN' . '}';
+        $userFound = false;
     } else {
         define( 'TITLE', '{@PROFIL_OF} ' . $user->get('username') );
+    }
+}
+
+if ( $_POST['send'] == 1 and $_POST['method'] == 'add' and empty($alert) and $viewer->auth() ) {
+    if ($_POST['profilId'] === $user->get('id')) {
+        try {
+            $user->addStatus($_POST['content'], $viewer->get('id'), $_POST['profilId']);
+            $success = '{@' . 'STATUS_ADDED' . '}';
+            $_POST['content'] = '';
+        } catch (Exception $e) {
+            $error = '{@' . $e->getMessage() . '}';
+        }
+    } else {
+        $error = '{@' . 'UNKNOW_USER' . '}';
+    }
+} else if ( $_POST['send'] == 1 and $_POST['method'] == 'remove' and empty($alert) and $viewer->auth() ) {
+    try {
+        $user->deleteStatus($_POST['statusId'], $user->get('id'), true);
+        $success = '{@' . 'STATUS_REMOVED' . '}';
+    } catch (Exception $e) {
+        $error = '{@' . $e->getMessage() . '}';
     }
 }
 

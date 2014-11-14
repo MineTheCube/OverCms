@@ -1,35 +1,61 @@
 <?php
 
-function view($html, $page) {
+function view($content, $page) {
 
+
+    /**
+     *  Create needed objects
+     */
     $config = new Config;
     $app = new App;
     $tools = new Tools;
-    
     $user = new User;
     $user->setup();
-    
-    $html = str_replace( '<!-- %', '%', $html );
-    $html = str_replace( '% -->', '%', $html );
-    
-    /* NAVBAR MAKER */
-    /* ============ */
 
-    $match = $tools->textBetween($html, '%SINGLE%');
+
+    /**
+     *  Get page
+     */
+    $e = 'Template file not found: '.THEMES.CURRENT_THEME.'/includes/';
+    $html = new StdClass;
+    $html->overall = @file_get_contents(THEMES . CURRENT_THEME . '/includes/' . 'overall' . EXT) or die($e.'overall.htm');
+    $html->navbar = @file_get_contents(THEMES . CURRENT_THEME . '/includes/' . 'navbar' . EXT) or die($e.'navbar.htm');
+    $html->container = @file_get_contents(THEMES . CURRENT_THEME . '/includes/' . 'container' . EXT) or die($e.'container.htm');
+    $html->footer = @file_get_contents(THEMES . CURRENT_THEME . '/includes/' . 'footer' . EXT) or die($e.'footer.htm');
+    $html->header = '';
+    $html->content = '';
+
+
+    /**
+     *  Begin with some stuff
+     */
+    foreach ($html as $key => $data) {
+        $data = str_replace( '<!-- %', '%', $data );
+        $html->$key = str_replace( '% -->', '%', $data );
+    }
+    $error = @file_get_contents(THEMES . CURRENT_THEME . '/misc/error.htm');
+    if ($error === false)
+        $error = '%MESSAGE%';
+        
+    
+    /**
+     *  Making the navbar
+     */
+    $match = $tools->textBetween($html->navbar, '%SINGLE%');
     $navSingle = $match[1];
-    $html = str_replace( $match[0], '', $html );
+    $html->navbar = str_replace( $match[0], '', $html->navbar );
     
-    $match = $tools->textBetween($html, '%CHILD_START%');
+    $match = $tools->textBetween($html->navbar, '%CHILD_START%');
     $navGroup['start'] = $match[1];
-    $html = str_replace( $match[0], '', $html );
+    $html->navbar = str_replace( $match[0], '', $html->navbar );
     
-    $match = $tools->textBetween($html, '%CHILD_SINGLE%');
+    $match = $tools->textBetween($html->navbar, '%CHILD_SINGLE%');
     $navGroup['single'] = $match[1];
-    $html = str_replace( $match[0], '', $html );
+    $html->navbar = str_replace( $match[0], '', $html->navbar );
     
-    $match = $tools->textBetween($html, '%CHILD_END%');
+    $match = $tools->textBetween($html->navbar, '%CHILD_END%');
     $navGroup['end'] = $match[1];
-    $html = str_replace( $match[0], '', $html );
+    $html->navbar = str_replace( $match[0], '', $html->navbar );
     
     $navbar = '';
     
@@ -49,7 +75,7 @@ function view($html, $page) {
         } else {
         
             $nav = $navSingle;         
-            if ( $page->get('slug') == $navPage['slug'] ) {
+            if ( $currentSlug == $navPage['slug'] ) {
                 $nav = str_replace( '{ACTIVE_CURRENT}' , 'active', $nav);
             } else {
                 $nav = str_replace( '{ACTIVE_CURRENT}' , '', $nav);
@@ -61,139 +87,289 @@ function view($html, $page) {
                 $nav = str_replace( '{HREF}' , ABS_ROOT . $navPage['slug'] . '/', $nav);
                 $nav = str_replace( '{TITLE}' , $navPage['title'], $nav);   
             }
-            
-            
-            
-            
-            
             $navbar .= $nav . PHP_EOL;
             
         }
     }
     
-    $match = $tools->textBetween($html, '%NAVBAR%');
-    $html = str_replace( $match[0], $navbar, $html );
+    $match = $tools->textBetween($html->navbar, '%NAVBAR%');
+    $html->navbar = str_replace( $match[0], $navbar, $html->navbar );
     
-    /* USER NAVBAR */
-    /* ============*/
     
+    /**
+     *  Insert user links in navbar
+     */
     $page_login = $page->getPage(array('type' => 'native', 'type_data' => 'login' ));
     $page_register = $page->getPage(array('type' => 'native', 'type_data' => 'register' ));
     $page_account = $page->getPage(array('type' => 'native', 'type_data' => 'account' ));
     $page_logout = $page->getPage(array('type' => 'native', 'type_data' => 'logout' ));
     $page_recovery = $page->getPage(array('type' => 'native', 'type_data' => 'recovery' ));
     $page_member = $page->getPage(array('type' => 'native', 'type_data' => 'member' ));
+    $currentSlug = $page->get('slug');
     
     if ( $user->auth() ) {
-        if ( $page->get('slug') == $page_member['slug'] ) {
-            $html = str_replace( '{USER_1_ACTIVE_CURRENT}', 'active', $html );
-        } else {
-            $html = str_replace( '{USER_1_ACTIVE_CURRENT}', '',       $html );
-        }
-        $html = str_replace( '{USER_2_ACTIVE_CURRENT}', '',       $html );
-        $html = str_replace( '{USER_1_HREF}', ABS_ROOT . $page_member['slug'] . '/', $html );
-        $html = str_replace( '{USER_2_HREF}', ABS_ROOT . $page_logout['slug']  . '/', $html );
-        $html = str_replace( '{USER_1_TITLE}', $config->get('user->nav->icons->account') . $user->get('username'), $html );
-        $html = str_replace( '{USER_2_TITLE}', $config->get('user->nav->icons->logout') . $page_logout['title'] ,  $html );
+        if ( $currentSlug == $page_member['slug'] )
+            $html->navbar = str_replace( '{USER_1_ACTIVE_CURRENT}', 'active', $html->navbar );
+        else
+            $html->navbar = str_replace( '{USER_1_ACTIVE_CURRENT}', '', $html->navbar );
+
+        $html->navbar = str_replace( '{USER_2_ACTIVE_CURRENT}', '',       $html->navbar );
+        $html->navbar = str_replace( '{USER_1_HREF}', ABS_ROOT . $page_member['slug'] . '/', $html->navbar );
+        $html->navbar = str_replace( '{USER_2_HREF}', ABS_ROOT . $page_logout['slug']  . '/', $html->navbar );
+        $html->navbar = str_replace( '{USER_1_TITLE}', $config->get('user->nav->icons->account') . $user->get('username'), $html->navbar );
+        $html->navbar = str_replace( '{USER_2_TITLE}', $config->get('user->nav->icons->logout') . $page_logout['title'] ,  $html->navbar );
     } else {
-        if ( $page->get('slug') == $page_login['slug'] ) {
-            $html = str_replace( '{USER_1_ACTIVE_CURRENT}', 'active', $html );
-        } else {
-            $html = str_replace( '{USER_1_ACTIVE_CURRENT}', '',       $html );
-        }
-        if ( $page->get('slug') == $page_register['slug'] ) {
-            $html = str_replace( '{USER_2_ACTIVE_CURRENT}', 'active', $html );
-        } else {
-            $html = str_replace( '{USER_2_ACTIVE_CURRENT}', '',       $html );
-        }
-        $html = str_replace( '{USER_1_HREF}', ABS_ROOT . $page_login['slug']    . '/', $html );
-        $html = str_replace( '{USER_2_HREF}', ABS_ROOT . $page_register['slug'] . '/', $html );
-        $html = str_replace( '{USER_1_TITLE}', $config->get('user->nav->icons->login') . $page_login['title'],    $html );
-        $html = str_replace( '{USER_2_TITLE}', $config->get('user->nav->icons->register') . $page_register['title'], $html );
+        if ( $currentSlug == $page_login['slug'] )
+            $html->navbar = str_replace( '{USER_1_ACTIVE_CURRENT}', 'active', $html->navbar );
+        else
+            $html->navbar = str_replace( '{USER_1_ACTIVE_CURRENT}', '',       $html->navbar );
+
+        if ( $currentSlug == $page_register['slug'] )
+            $html->navbar = str_replace( '{USER_2_ACTIVE_CURRENT}', 'active', $html->navbar );
+        else
+            $html->navbar = str_replace( '{USER_2_ACTIVE_CURRENT}', '',       $html->navbar );
+
+        $html->navbar = str_replace( '{USER_1_HREF}', ABS_ROOT . $page_login['slug']    . '/', $html->navbar );
+        $html->navbar = str_replace( '{USER_2_HREF}', ABS_ROOT . $page_register['slug'] . '/', $html->navbar );
+        $html->navbar = str_replace( '{USER_1_TITLE}', $config->get('user->nav->icons->login') . $page_login['title'], $html->navbar );
+        $html->navbar = str_replace( '{USER_2_TITLE}', $config->get('user->nav->icons->register') . $page_register['title'], $html->navbar );
     }
-        
-    /* HEADER MAKER */
-    /* ============ */
+
     
-    $header['active'] = $page->get('header');
-    if ( empty( $header['active'] )) {
-        $html = str_replace( '%HEADER%', '', $html );
-    } else {
-        $header['plugins'] = array();
-        $files = glob(PLUGIN . 'header/*', GLOB_ONLYDIR | GLOB_MARK );
-        foreach($files as $file) {
-            if (file_exists($file . 'config.cfg.php')) {
-                $configPlugin = new Config($file . 'config.cfg.php');
-                if ( $configPlugin->get('plugin->type') == 'header' ) {
-                    $header['plugins'][ $configPlugin->get('plugin->name') ] = $file;
+    /**
+     *  Get template of plugins
+     */
+    $template = array();
+    $themePlugins = glob(THEMES . CURRENT_THEME . '/plugins/*', GLOB_ONLYDIR | GLOB_MARK );
+    foreach($themePlugins as $themePlugin) {
+        if (file_exists( $themePlugin . CONFIG)) {
+            $themeConfig = new Config( $themePlugin . CONFIG );
+            $name = $themeConfig->get('plugin->name', false);
+            if (!isset($template[$name]) and $name) {
+                $template[$name] = array(
+                    'version' => $themeConfig->get('plugin->version'),
+                    'path' => $themePlugin
+                );
+            }
+        }
+    }
+
+    
+    /**
+     *  Get all Plugins
+     */
+    $plugins = array();
+    $pluginsFolder = glob(PLUGIN . '*', GLOB_ONLYDIR | GLOB_MARK );
+    if (is_array($pluginsFolder)) {
+        foreach ($pluginsFolder as $plugin) {
+            if (file_exists($plugin . 'core' . EX) and file_exists($plugin . CONFIG)) {
+                try {
+                    $pluginConfig = new Config($plugin . CONFIG);
+                    $name = $pluginConfig->get('plugin->name', false);
+                    if (!isset($plugins[$name]) and $name) {
+                        $data = array();
+                        $type = $pluginConfig->get('plugin->type', false);
+                        $data['type'] = $type;
+                        $data['api'] = $pluginConfig->get('plugin->api', false);
+                        $data['path'] = $plugin;
+                        $data['compatible'] = false;
+                        if ( $config->exists('cms->compatible->'.$type))
+                            if ( version_compare( $config->get('cms->version'), $pluginConfig->get('plugin->require->cms'), '>=' ) and
+                                 version_compare($pluginConfig->get('plugin->require->cms'), $config->get('cms->compatible->'.$type), '>=') )
+                                    $data['compatible'] = true;
+                        $data['template'] = false;
+                        if ($pluginConfig->exists('plugin->require->theme'))
+                            if (version_compare( $pluginConfig->get('plugin->require->theme'), $template[$name]['version'], "<=" ))
+                                $data['template'] = $template[$name]['path'] . 'views/';
+                        $plugins[$name] = $data;
+                    }
+                } catch (Exception $e) {
                 }
             }
         }
-        $data = $page->get('header_data');
-        define('HEADER', HTTP_ROOT . $header['plugins'][$header['active']]);
-        $file = $app->needFile( $header['plugins'][$header['active']] . 'core.php' );
-        require_once $file;
-        $html = str_replace( '%HEADER%', $content, $html );
-        unset( $content );
     }
-        
-    /* SIDEBAR MAKER */
-    /* ============= */
     
-    $match = $tools->textBetween($html, '%SIDEBAR%');
-    $sidebar['template'] = $match[1];
     
-    $sidebar['active'] = $page->getSidebars();
-    if (!empty( $sidebar['active'] )) {
-        $sidebar['plugins'] = array();
-        $files = glob(PLUGIN . 'sidebar/*', GLOB_ONLYDIR | GLOB_MARK );
-        foreach($files as $file) {
-            if (file_exists($file . 'config.cfg.php')) {
-                $configPlugin = new Config($file . 'config.cfg.php');
-                if ( $configPlugin->get('plugin->type') == 'sidebar' ) {
-                    $sidebar['plugins'][ $configPlugin->get('plugin->name') ] = $file;
-                }
+    /**
+     *  Encapsulation (PHP 5.2 compatible)
+     */
+    function pluginEncapsulation($page, $theme, $path) {
+        require_once $path.'core.php';
+        return $output;
+    }
+    function encapsulation($page, $data, $path) {
+        require_once $path.'core.php';
+        return $output;
+    }
+    
+    
+    /**
+     *  Include plugin
+     */
+    if ($page->get('type') == 'plugin') {
+        $name = $page->get('type_data');
+        if (!empty($plugins[$name]) and $plugins[$name]['compatible'] === true and $plugins[$name]['type'] === 'page') {
+            $theme = $plugins[$name]['template'];
+            $data = pluginEncapsulation($page, $theme, $plugins[$name]['path']);
+            $html->content = $data['content'];
+            if ($data['translation']) {
+                Translate::addPath( $plugins[$name]['path'] . $data['translation'], (isset($data['default_language']) ? $data['default_language'] : 'en_US') );
+            }
+        } else if (DEBUG) {
+            if ($plugins[$name]['compatible'] === false)
+                $html->content = str_replace( '%MESSAGE%', '{@ERROR_PLUGIN_VERSION}'.$name , $error );            
+            else
+                $html->content = str_replace( '%MESSAGE%', '{@ERROR_PLUGIN_NOT_FOUND}'.$name , $error ); 
+        } else {
+            $html->content = str_replace( '%MESSAGE%', '{@ERROR_CANNOT_LOAD_PAGE}'.$name , $error );
+        }
+    } else {
+        $html->content = $content;
+    }
+    unset($content);
+    
+    
+    /**
+     *  Making the header
+     */
+    $name = $page->get('header');
+    if (!empty($name)) {
+	    if (!empty($plugins[$name]) and $plugins[$name]['compatible'] === true and $plugins[$name]['type'] === 'header') {
+	        $headerData = $page->get('header_data');
+	        $data = encapsulation($page, $headerData, $plugins[$name]['path']);
+	        $html->header = $data['content'];
+	        if ($data['translation']) {
+	            Translate::addPath( $plugins[$name]['path'] . $data['translation'], (isset($data['default_language']) ? $data['default_language'] : 'en_US') );
+	        }
+	    } else if (DEBUG) {
+	        if ($plugins[$name]['compatible'] === false)
+	            $html->header = str_replace( '%MESSAGE%', '{@ERROR_PLUGIN_VERSION}'.$name , $error );            
+	        else
+	            $html->header = str_replace( '%MESSAGE%', '{@ERROR_PLUGIN_NOT_FOUND}'.$name , $error );
+	    }    	
+    }
+    unset($content);
+
+    
+    /**
+     *  Making the sidebar
+     */
+    $sidebarMatch = $tools->textBetween($html->container, '%SIDEBAR%');
+    $sidebarTemplate = $sidebarMatch[1];
+    $sidebarHtml = '';
+    $sidebars = $page->getSidebars();
+    if (!empty( $sidebars )) {
+        foreach ($sidebars as $sidebar) {
+            $name = $sidebar['plugin'];
+            if ( !empty($plugins[$name]) and $plugins[$name]['compatible'] === true and $plugins[$name]['type'] === 'sidebar') {
+                    $sidebarData = $sidebar['data'];
+                    $data = encapsulation($page, $sidebarData, $plugins[$name]['path']);
+                    $sidebar['construct'] = $sidebarTemplate;
+                    $sidebar['construct'] = str_replace( '%TITLE%',   $sidebar['name'], $sidebar['construct']);
+                    $sidebar['construct'] = str_replace( '%CONTENT%', $data['content'], $sidebar['construct']);
+                    unset( $content, $sidebarData );
+                    $sidebarHtml .= $sidebar['construct'];
+                    if ($data['translation']) {
+                        Translate::addPath( $plugins[$name]['path'] . $data['translation'], (isset($data['default_language']) ? $data['default_language'] : 'en_US') );
+                    }
+            } else if (DEBUG) {
+                if ($plugins[$name]['compatible'] === false)
+                    $sidebarHtml .= str_replace( '%MESSAGE%', '{@ERROR_PLUGIN_VERSION}'.$name , $error );            
+                else
+                    $sidebarHtml .= str_replace( '%MESSAGE%', '{@ERROR_PLUGIN_NOT_FOUND}'.$name , $error );
             }
         }
-        foreach ($sidebar['active'] as $value) {
-            if ( !empty($sidebar['plugins'][$value['plugin']]) ) {
-                if ( file_exists( $sidebar['plugins'][$value['plugin']] . 'core.php') ) {
-                    $data = $value['data'];
-                    $currentFile = $sidebar['plugins'][$value['plugin']];
-                    require_once $currentFile . 'core.php';
-                    $sidebar['construct'] = $sidebar['template'];
-                    $sidebar['construct'] = str_replace( '%TITLE%',   $value['name'], $sidebar['construct']);
-                    $sidebar['construct'] = str_replace( '%CONTENT%', $content,       $sidebar['construct']);
-                    unset( $content );
-                    $sidebar['html'][] = $sidebar['construct'];
-                }
-            }    
-        }
+    }
+    $html->container = str_replace($sidebarMatch[0], $sidebarHtml, $html->container);
+    
+    
+    /**
+     *  Generate container
+     */
+    $sidebarEnabled = $config->get('user->settings->sidebar', 'true') == true;
+    if ( FULLWIDE === true ) {
+        $inner = textBetween($html->container, '%FULLWIDE%');
+        $html->container = str_replace($inner[0], $html->content, $html->container);
+    } else if ( WIDE === true ) {
+        $inner = $tools->textBetween($html->container, '%WIDE%');
+        $html->container = str_replace($inner[0], $html->content, $html->container);
+        $html->container = str_replace('%FULLWIDE%', '', $html->container);
+    } else if ( NOBODY === true ) {
+        $inner = $tools->textBetween($html->container, '%BODY%');
+        $html->container = str_replace($inner[0], $html->content, $html->container);
+        $html->container = str_replace('%FULLWIDE%', '', $html->container);
+        $html->container = str_replace('%WIDE%', '', $html->container);
+    } else {
+        $html->container = str_replace('%INNER%', $html->content, $html->container);
+        $html->container = str_replace('%FULLWIDE%', '', $html->container);
+        $html->container = str_replace('%WIDE%', '', $html->container);
+        $html->container = str_replace('%BODY%', '', $html->container);
     }
     
-    foreach ($sidebar['html'] as $value) {
-        $sidebar['render'] .= $value;
+    
+    /**
+     *  Render with sidebar settings
+     */
+    if ($sidebarEnabled) {
+        $html->container = preg_replace('/(?s)%SIDEBAR_OFF%(.*?)%SIDEBAR_OFF%/', '', $html->container);
+    } else {
+        $html->container = preg_replace('/(?s)%SIDEBAR_ON%(.*?)%SIDEBAR_ON%/', '', $html->container);
     }
-    $html = str_replace( $match[0], $sidebar['render'], $html );
+    $html->container = str_replace('%SIDEBAR_ON%', '', $html->container);
+    $html->container = str_replace('%SIDEBAR_OFF%', '', $html->container);
     
-    /* REPLACE VARIABLES */
-    /* ================= */
     
+    /**
+     *  Render complete html page
+     */
+    $htmlpage = '';
+    $htmlpage .= $html->overall;
+    $htmlpage .= $html->navbar;
+    $htmlpage .= $html->header;
+    $htmlpage .= $html->container;
+    $htmlpage .= $html->footer;
+    
+    
+    /**
+     *  Include render of theme if any
+     */
+    $render = THEMES . CURRENT_THEME . '/render/core.php';
+    if (file_exists($render))
+        include $render;
+    
+    
+    /**
+     *  Prepare variables
+     */
+    if (defined('TITLE'))
+        $title = TITLE;
+    else
+        $title = $page->get('title');
+    
+    $mail = $config->get('user->info->email', 'unknow');
+    $mailto = 'mailto:'.$mail;
+    for ($i=0; $i<strlen($mail); $i++)
+        $mailEncoded .= "&#" . ord($mail[$i]) . ";";
+    for ($i=0; $i<strlen($mailto); $i++)
+        $mailtoEncoded .= "&#" . ord($mailto[$i]) . ";";
+    
+    
+    /**
+     *  Add variables
+     */
     $variables = array(
         'NAME' => $config->get('user->info->name', 'unknow'),
+        'MAIL' => $mail,
+        'MAIL_ENCODED' => $mailEncoded,
+        'MAILTO_ENCODED' => $mailtoEncoded,
         'VERSION' => $config->get('cms->version', 'unknow'),
         'LANGUAGE' => $config->get('user->settings->language', 'en_US'),
         'HTML_LANG' => substr( $config->get('user->settings->language', 'en_US') , 0, 2),
         'DESCRIPTION' => $config->get('user->info->description', ''),
-        'THEME' => $config->get('user->settings->theme', 'bootswatch'),
+        'CURRENT_THEME' => $config->get('user->settings->theme', 'bootswatch'),
         'DEBUG' => $config->get('user->settings->debug', false)
     );
     
-    if ( defined ( 'TITLE' ) ) {
-        $title = TITLE;
-    } else {
-        $title = $page->get('title');
-    }
 
     $variables = array_merge($variables, array(
         'PAGE' => $title,
@@ -201,7 +377,7 @@ function view($html, $page) {
         'CURRENT_USER_PICTURE' => $user->get('picture'),
         'YEAR' => date("Y"),
         'ROOT' => ABS_ROOT,
-        'ASSETS' => HTTP_ROOT . THEMES . THEME . '/assets/'
+        'ASSETS' => HTTP_ROOT . THEMES . CURRENT_THEME . '/assets/'
     ));
     
     $variables = array_merge($variables, array(
@@ -218,17 +394,17 @@ function view($html, $page) {
     foreach( $variables as $key => $value ) {
         $arrayVariables['{'.$key.'}'] = $value;
     }
-    $html = strtr($html, $arrayVariables);
+    $htmlpage = strtr($htmlpage, $arrayVariables);
     
     // PHP Variables
-    preg_match_all('/\{\$([a-zA-Z\ \_\[\]\'\"\-\>]*)\}/', $html, $matches, PREG_PATTERN_ORDER);
+    preg_match_all('/\{\$([a-zA-Z\ \_\[\]\'\"\-\>]*)\}/', $htmlpage, $matches, PREG_PATTERN_ORDER);
     foreach ($matches[1] as $value) {
         if ( strpos( $value, 'post ') == 0 ) {
             $postvalue = str_replace('post ', '', $value);
-            $html = str_replace('{$'.$value.'}', $_POST[$postvalue], $html);
+            $htmlpage = str_replace('{$'.$value.'}', $_POST[$postvalue], $htmlpage);
         } else {
             global $$value;
-            $html = str_replace('{$'.$value.'}', $$value, $html);
+            $htmlpage = str_replace('{$'.$value.'}', $$value, $htmlpage);
         }
     }
     
@@ -237,19 +413,26 @@ function view($html, $page) {
     foreach( $translations as $key => $value ) {
         $arrayTranslations['{@'.$key.'}'] = $value;
     }
-    $html = strtr($html, $arrayTranslations);
+    $htmlpage = strtr($htmlpage, $arrayTranslations);
     
-    $textareasBefore = $tools->textBetween($html, '<textarea', 'textarea>');
-    $html = preg_replace('/<!--.*?-->|\t|(?:\r?\n[ \t]*)+/s', ' ', $html);
-    $html = preg_replace('/ {2,}/', ' ', $html);
-    $textareasAfter = $tools->textBetween($html, '<textarea', 'textarea>');
-    if ($textareasBefore and $textareasAfter) {
-        $html = str_replace( $textareasAfter[0], $textareasBefore[0], $html);
-    }
+    $textareasBefore = $tools->textBetween($htmlpage, '<textarea', 'textarea>');
+    $htmlpage = preg_replace('/<!--.*?-->|\t|(?:\r?\n[ \t]*)+/s', ' ', $htmlpage);
+    $htmlpage = preg_replace('/ {2,}/', ' ', $htmlpage);
+    $textareasAfter = $tools->textBetween($htmlpage, '<textarea', 'textarea>');
+    if ($textareasBefore and $textareasAfter)
+        $htmlpage = str_replace( $textareasAfter[0], $textareasBefore[0], $htmlpage);
     
     global $timestart;
-    $html = str_replace( '{EXEC_TIME}', number_format(microtime(true)-$timestart, 4), $html );
+    $execTime = microtime(true)-$timestart;
+    // $htmlpage = str_replace( '{EXEC_TIME}', count(get_included_files()).' files', $htmlpage );
+    if ($execTime > 1)
+        $htmlpage = str_replace( '{EXEC_TIME}', number_format(microtime(true)-$timestart, 3) . ' s', $htmlpage );
+    else
+        $htmlpage = str_replace( '{EXEC_TIME}', round($execTime*1000) . ' ms', $htmlpage );
     
-    // Return result
-    return $html;
+    
+    /**
+     *  Return final html page
+     */
+    return $htmlpage;
 }

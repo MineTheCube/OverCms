@@ -37,6 +37,19 @@ class Config {
         return $return;
     }
 
+    public function exists($key) {
+        $config = $this->getConfig();
+        $keys = explode('->', $key);
+        foreach($keys as $key) {
+            if (!isset($config->$key))
+                $unknow = true;
+            $config = $config->$key;
+        }
+        if ($unknow)
+            return false;
+        return true;
+    }
+
     public function set($key, $value) {
         $configArray = json_decode(json_encode($this->configJson), true);
         $keys = explode('->', $key);
@@ -78,6 +91,10 @@ class Config {
             $file = file_get_contents($this->configFile);
             $fileJson = substr($file, 7, -4);
             $this->configJson = json_decode($fileJson);
+            if (empty($this->configJson) and $this->configFile == DATA . "config.cfg.php") {
+                echo 'Cannot load CMS configuration.';
+                exit();
+            }
         }
         return $this->configJson;
     }

@@ -1,6 +1,6 @@
 <?php
 
-$html = file_get_contents(THEMES . THEME . '/views/login/login' . EXT);
+$html = file_get_contents(THEMES . CURRENT_THEME . '/views/login/login' . EXT);
 
 $matchError = $tools->textBetween($html, '%ALERT_ERROR%');
 $alertError = $matchError[1];

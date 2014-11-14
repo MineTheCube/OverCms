@@ -62,6 +62,14 @@ if ( $page->slugExist($url_parts[1], true) and $page->slugExist($url_parts[0], f
 /* ============================== */
 
 
+/* ============================== */
+define('REQUEST_PARENT', $request['parent']);
+define('REQUEST_SLUG', $request['slug']);
+define('REQUEST_CURRENT', $request['current']);
+define('REQUEST_ARGS', $request['args']);
+/* ============================== */
+
+
    /*********************************/
   /***/ $this->prepare($request); /***/
    /*********************************/

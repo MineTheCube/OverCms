@@ -1,6 +1,6 @@
 <?php
 
-$html = file_get_contents(THEMES . THEME . '/views/register/register' . EXT);
+$html = file_get_contents(THEMES . CURRENT_THEME . '/views/register/register' . EXT);
 
 $matchError = $tools->textBetween($html, '%ALERT_ERROR%');
 $alertError = $matchError[1];
@@ -9,6 +9,7 @@ $matchSuccess = $tools->textBetween($html, '%ALERT_SUCCESS%');
 $alertSuccess = $matchSuccess[1];
 
 $html = str_replace('%TOKEN%', $token, $html);
+$html = str_replace('%CAPTCHA%', $captchaImage, $html);
 
 if ( !empty( $error ) ) {
     $html = str_replace( $matchError[0], str_replace( '%MESSAGE%', $error, $alertError ) , $html );
