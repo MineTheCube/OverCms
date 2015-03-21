@@ -1,58 +1,58 @@
-
-.box-content {
-    background: white;
-    padding: 40px;
-    border: 1px solid #EEE;
-    margin: 10px 0;
-}
-
-.box-sidebar {
-    background: white;
-    padding: 0px;
-    border: 1px solid #EEE;
-    margin: 10px 0 20px 0;
-}
-
-.box-sidebar > .box-title {
-    border-bottom: 1px dashed #DDD;
-    padding: 20px 30px 15px 30px;
-}
-
-.box-sidebar > .box-inner {
-    padding: 20px 30px 30px 30px;
-}
-
-.form-horizontal .control-label, .form-horizontal .radio, .form-horizontal .checkbox, .form-horizontal .radio-inline, .form-horizontal .checkbox-inline {
-    padding-top: 10px;
-}
-
-input[type=radio], input[type=checkbox] {
-    margin-top: 2px;
-}
-
-.glyphicon {
-    top: 0px;
-    font-size: 80%;
-}
-
-p, h2, h3, h4, h5, h6 {
-    margin: 5px 0;
-}
-
-h1 {
-    margin-top: 5px;
-    margin-bottom: 5px;
-}
-
-.table.table-borderless>thead>tr>th, .table.table-borderless>tbody>tr>th, .table.table-borderless>tfoot>tr>th, .table.table-borderless>thead>tr>td, .table.table-borderless>tbody>tr>td, .table.table-borderless>tfoot>tr>td {
-    border: none;
-}
-
-.media > .media-body textarea.form-control {
-    height: 64px;
-}
-
-#container img {
-    max-width: 100%;
-    height: auto;
+
+.box-content {
+    background: white;
+    padding: 40px;
+    border: 1px solid #EEE;
+    margin: 10px 0;
+}
+
+.box-sidebar {
+    background: white;
+    padding: 0px;
+    border: 1px solid #EEE;
+    margin: 10px 0 20px 0;
+}
+
+.box-sidebar > .box-title {
+    border-bottom: 1px dashed #DDD;
+    padding: 20px 30px 15px 30px;
+}
+
+.box-sidebar > .box-inner {
+    padding: 20px 30px 30px 30px;
+}
+
+.form-horizontal .control-label, .form-horizontal .radio, .form-horizontal .checkbox, .form-horizontal .radio-inline, .form-horizontal .checkbox-inline {
+    padding-top: 10px;
+}
+
+input[type=radio], input[type=checkbox] {
+    margin-top: 2px;
+}
+
+.glyphicon {
+    top: 0px;
+    font-size: 80%;
+}
+
+p, h2, h3, h4, h5, h6 {
+    margin: 5px 0;
+}
+
+h1 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.table.table-borderless>thead>tr>th, .table.table-borderless>tbody>tr>th, .table.table-borderless>tfoot>tr>th, .table.table-borderless>thead>tr>td, .table.table-borderless>tbody>tr>td, .table.table-borderless>tfoot>tr>td {
+    border: none;
+}
+
+.media > .media-body textarea.form-control {
+    height: 64px;
+}
+
+#container img {
+    max-width: 100%;
+    height: auto;
 }

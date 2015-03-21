@@ -1,121 +1,121 @@
-.carousel .item {
-    left: 0 !important;
-      -webkit-transition: opacity .8s; /*adjust timing here */
-         -moz-transition: opacity .8s;
-           -o-transition: opacity .8s;
-              transition: opacity .8s;
-}
-.carousel-control {
-}
-/* Fade controls with items */
-.active.left,
-.active.right {
-    opacity: 0;
-    z-index: 2;
-}
-.carousel-control {
-    z-index: 3;
-}
-.carousel {
-    padding-top: 0px;
-}
-.carousel .item {
-    height: 500px;
-    background-size: cover;
-}
-.carousel-caption {
-    margin: 0 auto; 
-    height: 320px;
-}
-.carousel-caption h1 {
-    font-size: 60px;
-    color: white;
-}
-.carousel-caption p {
-    font-size: 30px;
-    color: #EEE;
-}
-@media (max-width: 767px) {
-    .carousel-caption {
-        height: 230px;
-    }
-    .carousel-caption h1 {
-        font-size: 30px;
-    }
-    .carousel-caption p {
-        font-size: 18px;
-    }
-    .carousel .item {
-        height: 300px;
-    }
-}
-@media (min-width: 768px) and (max-width: 991px) {
-    .carousel-caption {
-        height: 230px;
-    }
-    .carousel-caption h1 {
-        font-size: 45px;
-    }
-    .carousel-caption p {
-        font-size: 24px;
-    }
-    .carousel .item {
-        height: 350px;
-    }
-}
-@media (min-width: 992px) and (max-width: 1200px) {
-    .carousel-caption {
-        height: 260px;
-    }
-    .carousel-caption h1 {
-        font-size: 50px;
-    }
-    .carousel-caption p {
-        font-size: 26px;
-    }
-    .carousel .item {
-        height: 400px;
-    }
-}
-
-.carousel-controls {
-    width: 100%;
-    z-index: 10;
-    height: 25px;
-}
-
-.carousel-controls-inner {
-    height: 25px;
-    width: 100%;
-    line-height: 27px;
-    padding: 0 20px;
-}
-
-.carousel-controls-inner .left {
-    float: left;
-}
-
-.carousel-controls-inner .right {
-    float: right;
-}
-
-.carousel-controls-inner .carousel-indicators {
-    position: inherit;
-    margin: auto;
-    padding: 0;
-}
-
-.carousel-controls-inner .carousel-indicators li {
-    margin: 0;
-    width: 12px;
-    height: 12px;
-    transition: all 500ms;
-    background-color: #555;
-}
-
-.carousel-controls-inner .carousel-indicators li.active {
-    background-color: #e74c3c;
-}
-
-
-
+.carousel .item {
+    left: 0 !important;
+      -webkit-transition: opacity .8s; /*adjust timing here */
+         -moz-transition: opacity .8s;
+           -o-transition: opacity .8s;
+              transition: opacity .8s;
+}
+.carousel-control {
+}
+/* Fade controls with items */
+.active.left,
+.active.right {
+    opacity: 0;
+    z-index: 2;
+}
+.carousel-control {
+    z-index: 3;
+}
+.carousel {
+    padding-top: 0px;
+}
+.carousel .item {
+    height: 500px;
+    background-size: cover;
+}
+.carousel-caption {
+    margin: 0 auto; 
+    height: 320px;
+}
+.carousel-caption h1 {
+    font-size: 60px;
+    color: white;
+}
+.carousel-caption p {
+    font-size: 30px;
+    color: #EEE;
+}
+@media (max-width: 767px) {
+    .carousel-caption {
+        height: 230px;
+    }
+    .carousel-caption h1 {
+        font-size: 30px;
+    }
+    .carousel-caption p {
+        font-size: 18px;
+    }
+    .carousel .item {
+        height: 300px;
+    }
+}
+@media (min-width: 768px) and (max-width: 991px) {
+    .carousel-caption {
+        height: 230px;
+    }
+    .carousel-caption h1 {
+        font-size: 45px;
+    }
+    .carousel-caption p {
+        font-size: 24px;
+    }
+    .carousel .item {
+        height: 350px;
+    }
+}
+@media (min-width: 992px) and (max-width: 1200px) {
+    .carousel-caption {
+        height: 260px;
+    }
+    .carousel-caption h1 {
+        font-size: 50px;
+    }
+    .carousel-caption p {
+        font-size: 26px;
+    }
+    .carousel .item {
+        height: 400px;
+    }
+}
+
+.carousel-controls {
+    width: 100%;
+    z-index: 10;
+    height: 25px;
+}
+
+.carousel-controls-inner {
+    height: 25px;
+    width: 100%;
+    line-height: 27px;
+    padding: 0 20px;
+}
+
+.carousel-controls-inner .left {
+    float: left;
+}
+
+.carousel-controls-inner .right {
+    float: right;
+}
+
+.carousel-controls-inner .carousel-indicators {
+    position: inherit;
+    margin: auto;
+    padding: 0;
+}
+
+.carousel-controls-inner .carousel-indicators li {
+    margin: 0;
+    width: 12px;
+    height: 12px;
+    transition: all 500ms;
+    background-color: #555;
+}
+
+.carousel-controls-inner .carousel-indicators li.active {
+    background-color: #e74c3c;
+}
+
+
+
