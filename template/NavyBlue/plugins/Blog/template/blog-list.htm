@@ -1,0 +1,76 @@
+<style type="text/css">
+.pagination>.disabled>a, .pagination>.disabled>a:hover, .pagination>.disabled>a:focus {
+    background-color: #2BB197;
+}
+.article .panel-footer {
+    background-color: #FAFAFA;
+}
+.article.hidden-article .panel-heading {
+    background-color: #FAC875;
+    border-color: #F1D19C;
+}
+.article.hidden-article {
+    border-color: #F1D19C;
+}
+.vcenter {
+    display: inline-block;
+    vertical-align: middle;
+    float: none;
+}
+</style>
+
+<!-- %P_EDIT% -->
+<a href="%URL_ADD_ARTICLE%" class="btn btn-info btn-block">
+    <span class="glyphicon glyphicon-edit"></span> {@BLOG_ADD_ARTICLE}
+</a>
+<hr>
+<!-- %P_EDIT% -->
+
+    {ALERT}
+
+<!-- %ARTICLE% -->
+
+<div class="row">
+    <div class="col-sm-4 hidden-xs vcenter">
+        <a href="%URL_ARTICLE%">
+            <img src="%URL_PICTURE%" alt="" class="img-responsive" style="max-height: 200px; margin: auto;"/>
+        </a>
+    </div><!--
+ --><div class="col-sm-8 col-xs-12 vcenter">
+        <!-- %HIDDEN_ARTICLE% -->
+        <div class="pull-right">
+            <h3><span class="glyphicon glyphicon-eye-close"></span></h3>
+        </div>
+        <!-- %HIDDEN_ARTICLE% -->
+        <a href="%URL_ARTICLE%">
+            <h3>%TITLE%</h3>
+        </a>
+        <br>
+        <p class="text-muted">
+            <a href="%URL_AUTHOR%" style="color: #777"><b>%AUTHOR%</b></a> | %DATE% | %COMMENTS% {@COMMENT}%S%
+        </p>
+        <br>
+        <p style="font-size: 18px;">
+            %CONTENT%
+        </p>
+    </div>
+</div>
+
+<hr>
+
+<!-- %ARTICLE% -->
+
+
+<!-- %PREVIOUS% -->
+  <div style="text-align: center;">
+    <ul class="pagination">
+      <li class="%DISABLED%"><a href="%URL%">&laquo; {@PREVIOUS}</a></li>
+<!-- %PREVIOUS% -->
+<!-- %PAGINATION% -->
+      <li class="%DISABLED% hidden-xs"><a href="%URL%">%NUM_PAGE%</a></li>
+<!-- %PAGINATION% -->
+<!-- %NEXT% -->
+      <li class="%DISABLED%"><a href="%URL%">{@NEXT} &raquo;</a></li>
+    </ul>
+  </div>
+<!-- %NEXT% -->

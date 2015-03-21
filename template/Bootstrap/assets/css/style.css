@@ -1,0 +1,67 @@
+
+/* Navbar */
+
+.navbar.navbar-default.navbar-static-top {
+    margin: 0px;
+}
+
+/* Footer */
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 70px;
+    background: #FCFCFC;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 60px;
+    margin-top: 10px;
+    background-color: #F5F5F5;
+    border-top: 1px solid #E2E2E2;
+}
+
+.text-muted {
+    color: #777;
+}
+
+.footer p {
+    margin-top: 20px;
+}
+
+/* Typography */
+
+.glyphicon {
+    top: 0px;
+    font-size: 80%;
+}
+
+p, h2, h3, h4, h5, h6 {
+    margin: 5px 0;
+}
+
+h1 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#container img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Other stuff */
+
+.table.table-borderless>thead>tr>th, .table.table-borderless>tbody>tr>th, .table.table-borderless>tfoot>tr>th, .table.table-borderless>thead>tr>td, .table.table-borderless>tbody>tr>td, .table.table-borderless>tfoot>tr>td {
+    border: none;
+}
+
+.media > .media-body textarea.form-control {
+    height: 64px;
+}

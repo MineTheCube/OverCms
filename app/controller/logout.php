@@ -1,20 +1,13 @@
 <?php
 
-$this->model('page');
-
-$page = new Page;
-$page->setup($request['slug']);
-
-$user = $this->model('user');
+$user = new User;
 $user->setup();
 
-if ($user->auth()) {
-    $user->logout();
-}
+if (!$user->auth())
+    go();
 
-$this->go();
+$loginPage = $page->getPage(array('type' => 'native', 'type_data' => 'login'));
+$user->logout();
 
-   /**********************************************/
-  /***//* $this->construct($page, $request); *//***/
-   /**********************************************/
-
+respond(true, 'LOGOUT_SUCCESSFUL');
+go($loginPage['slug']);

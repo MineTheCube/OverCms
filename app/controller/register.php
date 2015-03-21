@@ -1,6 +1,9 @@
 <?php
 
-if ( !empty($request['args']) ) {
+$user = new User;
+$user->setup();
+
+if (REQUEST_ARGS) {
     $redirect = true;
     $args = explode('/', $request['args']);
     if (ctype_digit($args[0]) and ctype_alnum($args[1]) and strlen($args[1]) == 20) {
@@ -9,58 +12,53 @@ if ( !empty($request['args']) ) {
         if ($user_exists) {
             $result = $user_recovery->validateToken($args[1]);
             if ($result) {
-                $success = '{@' . 'MAIL_CONFIRMED' . '}';
-                $redirect = false;
-                $_POST['username'] = $user_recovery->get('username');
-                $_POST['email'] = $user_recovery->get('email');
+                $loginPage = $page->getPage(array('type' => 'native', 'type_data' => 'login'));
+                respond(true, 'MAIL_CONFIRMED', $loginPage['slug']);
+                go($loginPage['slug']);
             }
         }
     }
     if ($redirect)
-        $this->go( $request['current'] );
+        go(REQUEST_CURRENT);
 }
 
-$user = new User;
-$user->setup();
-$tools = new Tools;
+if ($user->auth())
+    go();
 
-if ($user->auth()) {
-    $this->go();
-}
+$config = new Config;
+$needCaptcha = $config->get('user.settings.captcha_register', true);
 
-$captcha = $this->package('captcha');
-if ($captcha)
-    $captcha = new Captcha;
-else
-    $error = '{@ERROR_MISSING_PACKAGE}'.'Captcha';
-
-if ( isset($_POST['send']) and empty($error) ) {
-    if ($this->checkToken(true)) {
-        if ($captcha->check($_POST['captcha'])) {
-            try {
-                $register = $user->create( $_POST['username'], $_POST['email'], $_POST['password'], $_POST['confirm-password'] ); 
-            } catch (Exception $e) {
-                $error = '{@' . $e->getMessage() . '}';
-            }
-            if ( $register and empty( $error ) ) {
-                $config = new Config;
-                if ($config->get('user->settings->verifymail', false)) {
-                    $success = '{@' . 'PLEASE_CONFIRM_MAIL' . '}';                
-                } else {
-                    $success = '{@' . 'REGISTRATION_SUCCESSFUL' . '}';
-                }
-            }
-        } else {
-            $error = '{@' . 'INVALID_CAPTCHA' . '}';
-        }
-    } else {
-        $error = '{@' . 'INVALID_TOKEN' . '}';
+if ($needCaptcha) {
+    $captcha = $this->package('captcha');
+    if ($captcha)
+        $captcha = new Captcha;
+    else {
+        respond(false, '{@ERROR_MISSING_PACKAGE}'.'Captcha');
+        $needCaptcha = false;
     }
 }
 
-$captchaImage = $captcha->generate();
-$token = $this->getToken();
+if (POST and !hasFlash()) {
+    if (!$needCaptcha or $captcha->check($_POST['captcha'])) {
+        try {
+            $register = $user->create( $_POST['username'], $_POST['email'], $_POST['password'], $_POST['confirm-password'] ); 
+        } catch (Exception $e) {
+            respond($e);
+        }
+        if ( $register and !hasFlash()) {
+            if ($config->get('user.settings.verifymail', false)) {
+                respond(true, 'PLEASE_CONFIRM_MAIL');                
+            } else {
+                $loginPage = $page->getPage(array('type' => 'native', 'type_data' => 'login'));
+                respond(true, 'REGISTRATION_SUCCESSFUL', $loginPage['slug']);
+            }
+        }
+    } else {
+        respond(false, 'INVALID_CAPTCHA');
+    }
+}
 
-$content = $page->get('content');
+if ($needCaptcha)
+    $captchaImage = $captcha->get();
+
 include ( VIEW . 'register.php');
-$content .= $html;

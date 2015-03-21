@@ -16,9 +16,7 @@ class Translate {
             return false;
         }
         if(is_array($lang)) {
-            foreach($lang as $key => $value) {
-                self::$translations[$key] = $value;
-            }
+            self::$translations += $lang;
         } else {
             return false;
         }

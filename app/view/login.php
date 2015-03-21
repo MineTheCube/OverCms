@@ -1,14 +1,4 @@
 <?php
 
-$html = file_get_contents(THEMES . CURRENT_THEME . '/views/login/login' . EXT);
-
-$matchError = $tools->textBetween($html, '%ALERT_ERROR%');
-$alertError = $matchError[1];
-
-$html = str_replace('%TOKEN%', $token, $html);
-
-if ( !empty( $error ) ) {
-    $html = str_replace( $matchError[0], str_replace( '%MESSAGE%', $error, $alertError ) , $html );
-} else {
-    $html = str_replace( $matchError[0], '' , $html );
-}
+$content = file_get_contents(TEMPLATE . CURRENT_TEMPLATE . '/views/login' . EXT);
+$content = strip_comments($content);

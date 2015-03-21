@@ -1,0 +1,46 @@
+    </div>
+
+    <footer id="footer">
+
+        <div class="bottom">
+
+            <div class="container">
+
+                <span class="copy-text pull-right">
+                    <a href="#" onclick="return !$('html, body').animate({ scrollTop: 0 }, 600);">{@BACK_TO_TOP}</a>
+                </span>
+
+                <span class="copy-text">
+                    &copy; {YEAR} {NAME} &nbsp;&#183;&nbsp; {@CONTACT_US} <a href="{MAILTO_ENCODED}" target="_blank">{MAIL_ENCODED}</a> &nbsp;&#183;&nbsp; {EXEC_TIME}
+                </span>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="{ASSETS}js/jquery.min.js"></script>
+
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="{ASSETS}js/bootstrap.min.js"></script>
+
+    <!-- Execute jQuery function that was stored -->
+    <script type="text/javascript">jQueryFlush();</script>
+
+    <!-- Now user's scripts -->
+    <script src="{ASSETS}js/form-ajax.js"></script>
+    <script type="text/javascript">
+    function footerToBottom(){
+        $('#footer').css('margin-top', "40px")
+                    .css('margin-top', $(document).height() - $('#page-container').height() - $('#footer').height());
+    }
+    $(window).resize(footerToBottom);
+    $(window).load(footerToBottom);
+    footerToBottom();
+    </script>
+    <!-- %JAVASCRIPT% -->
+
+  </body>
+</html>

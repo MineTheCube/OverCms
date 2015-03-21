@@ -1,6 +1,9 @@
 <?php
 
 Class Session {
+
+    public function __construct() {
+    }
     
     public function start() {
         session_set_cookie_params (0, HTTP_ROOT, '', isset($_SERVER["HTTPS"]), true);
@@ -26,8 +29,11 @@ Class Session {
         return true;
     }
     
-    public function delete() {
-        session_destroy();
+    public function delete($index = null) {
+        if ($index === null)
+            session_destroy();
+        else
+            unset($_SESSION[$index]);
         return true;
     }
     

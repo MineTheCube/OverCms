@@ -1,0 +1,16 @@
+@import "../../sass/libs/custom";
+
+$fonts: (
+OpenSans-Regular-webfont normal normal,
+OpenSans-Italic-webfont normal italic,
+OpenSans-Bold-webfont bold normal,
+OpenSans-BoldItalic-webfont bold italic,
+OpenSans-ExtraBold-webfont 700 normal,
+OpenSans-ExtraBoldItalic-webfont 700 italic,
+OpenSans-Light-webfont 300 normal,
+OpenSans-LightItalic-webfont 300 italic,
+OpenSans-Semibold-webfont 300 normal,
+OpenSans-SemiboldItalic-webfont 300 italic,
+);
+
+@include fontkit($fonts, 'Open Sans Web');

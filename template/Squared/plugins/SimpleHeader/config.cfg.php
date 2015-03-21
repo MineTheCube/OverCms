@@ -1,0 +1,1 @@
+<?php/*{  "plugin": {    "name": "SimpleHeader",    "version": "1.0.0"  }}*/?>

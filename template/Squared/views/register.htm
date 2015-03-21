@@ -1,0 +1,44 @@
+
+    {ALERT}
+
+<form class="form-horizontal use-ajax" role="form" method="post">
+  <div class="form-group">
+    <label class="col-sm-3 control-label">{@USERNAME}</label>
+    <div class="col-sm-9">
+      <input name="username" type="text" class="form-control" placeholder="{@USERNAME}" value="{$username}" required>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-3 control-label">{@EMAIL}</label>
+    <div class="col-sm-9">
+      <input name="email" type="email" class="form-control" placeholder="{@EMAIL}" value="{$email}" required>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-3 control-label">{@PASSWORD}</label>
+    <div class="col-sm-9">
+      <input name="password" type="password" class="form-control" placeholder="{@PASSWORD}" required>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-3 control-label">{@VERIFY}</label>
+    <div class="col-sm-9">
+      <input name="confirm-password" type="password" class="form-control" placeholder="{@CONFIRM_PASSWORD}" required>
+    </div>
+  </div>
+  <!-- %IF_CAPTCHA% -->
+  <div class="form-group">
+    <label class="col-sm-3 control-label" style="padding-top: 1px;">
+      <img src="%CAPTCHA%" style="position: relative; top: -4px; height: 42px;"/>
+    </label>
+    <div class="col-sm-9">
+      <input name="captcha" type="text" class="form-control" placeholder="{@CAPTCHA}" required>
+    </div>
+  </div>
+  <!-- %IF_CAPTCHA% -->
+  <div class="form-group">
+    <div class="col-sm-offset-3 col-sm-9">
+      <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-ok"></span> &nbsp;{@BTN_REGISTER}</button>
+    </div>
+  </div>
+</form>

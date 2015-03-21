@@ -9,7 +9,7 @@ class Mail {
         
         $config = new Config;
         if ($fromEmail === null) {
-            $fromEmail = $config->get('user->info->email', false);
+            $fromEmail = $config->get('user.info.email', false);
             if ($fromEmail == false) {
                 throw new Exception('EMAIL_INCORRECT');
                 return false;
@@ -17,7 +17,7 @@ class Mail {
         }
         
         if ($fromName === null) {
-            $fromName = $config->get('user->info->name', false);
+            $fromName = $config->get('user.info.name', false);
             if ($fromName == false) {
                 throw new Exception('INVALID_DATA');
                 return false;

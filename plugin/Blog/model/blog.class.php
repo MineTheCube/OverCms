@@ -1,5 +1,7 @@
 <?php
 
+defined('IN_ENV') or die;
+
 class Blog {
 
     private $id;
@@ -13,20 +15,12 @@ class Blog {
     private $state;
 
     public function __construct() {
-        $app = new App;
-        $tableExist1 = $app->query('SELECT id FROM plugin_blog_posts WHERE 0');
-        $tableExist2 = $app->query('SELECT id FROM plugin_blog_comments WHERE 0');
-        if ($tableExist1 == false or $tableExist2 == false) {
-            $app->createTables( PATH_PLUGIN . 'model/tables.sql' );
-        }
     }
 
     public function setup($id) {
         
-        $app = new App;
-        
         // Get database
-        $rows = $app->query('SELECT * FROM plugin_blog_posts WHERE id = ? LIMIT 0, 10', array($id))->fetchAll(PDO::FETCH_ASSOC);
+        $rows = db()->select()->from('plugin_blog_posts')->where('id', $id)->limit(0, 10)->fetchAll();
         
         if (count($rows) == 1) {
             $article = $rows[0];
@@ -50,8 +44,6 @@ class Blog {
 
     public function getList($page, $showHidden) {
         
-        $app = new App;
-        
         if (!is_numeric($page) or $page <= 0 or $page > 9999) {
             throw new Exception('INVALID_DATA'); 
             return false;
@@ -61,9 +53,9 @@ class Blog {
         
         // Get database
         if ($showHidden) {
-            $rows = $app->query('SELECT * FROM plugin_blog_posts WHERE 1 ORDER BY date DESC LIMIT '.$page.', 5')->fetchAll(PDO::FETCH_ASSOC);
+            $rows = db()->select()->from('plugin_blog_posts')->orderBy('date', 'DESC')->limit($page, 5)->fetchAll();
         } else {
-            $rows = $app->query('SELECT * FROM plugin_blog_posts WHERE state = 0 ORDER BY date DESC LIMIT '.$page.', 5')->fetchAll(PDO::FETCH_ASSOC);
+            $rows = db()->select()->from('plugin_blog_posts')->where('state', 0)->orderBy('date', 'DESC')->limit($page, 5)->fetchAll();
         }
         
         if (count($rows) == 0) {
@@ -75,10 +67,8 @@ class Blog {
         
     }
 
-    public function getArticle($id, $showHidden) {
-        
-        $app = new App;
-        
+    public function getArticle($id, $showHidden = false) {
+
         if (!is_numeric($id) or $id <= 0 or $id > 99999) {
             throw new Exception('INVALID_DATA'); 
             return false;
@@ -86,11 +76,11 @@ class Blog {
         
         // Get database
         if ($showHidden) {
-            $rows = $app->query('SELECT * FROM plugin_blog_posts WHERE id = ?', $id)->fetchAll(PDO::FETCH_ASSOC);
+            $rows = db()->select()->from('plugin_blog_posts')->where('id', $id)->fetchAll();
         } else {
-            $rows = $app->query('SELECT * FROM plugin_blog_posts WHERE id = ? AND state = 0', $id)->fetchAll(PDO::FETCH_ASSOC);
+            $rows = db()->select()->from('plugin_blog_posts')->where('id', $id)->andWhere('state', 0)->fetchAll();
         }
-        
+
         if (count($rows) == 0) {
             throw new Exception('NO_ARTICLE'); 
             return false;
@@ -100,9 +90,15 @@ class Blog {
         
     }
 
+    public function deleteUser($id) {
+        if (!ctype_digit($id) and !is_int($id) or $id <= 0) return false;
+
+        db()->delete('plugin_blog_posts')->where('author_id', $id)->run();
+        db()->delete('plugin_blog_comments')->where('author_id', $id)->run();
+        return true;
+    }
+
     public function getComments($id) {
-        
-        $app = new App;
         
         if (!is_numeric($id) or $id <= 0) {
             throw new Exception('INVALID_DATA'); 
@@ -110,8 +106,7 @@ class Blog {
         }
         
         // Get database
-        $comments = $app->query('SELECT * FROM plugin_blog_comments WHERE type="comment" AND state = 0 AND post_id = ? ORDER BY date DESC', $id);
-        return $comments;
+        return db()->select()->from('plugin_blog_comments')->where('type', 'comment')->andWhere('state', 0)->andWhere('post_id', $id)->orderBy('date', 'DESC')->fetchAll();
     }
 
     public function addComment($content, $author_id, $post_id, $date = 0, $state = 0) {
@@ -138,18 +133,14 @@ class Blog {
             return false;
         }
         
-        $app = new App;
-        
-        $rows = $app->query('SELECT id FROM plugin_blog_posts WHERE id = ? AND state = 0', $post_id)->fetchAll(PDO::FETCH_ASSOC);
-        $articleExist = count($rows);
+        $articleExist = db()->select('id')->from('plugin_blog_posts')->where('id', $post_id)->andWhere('state', 0)->count();
 
         if ($articleExist !== 1) {
             throw new Exception('UNKNOW_ARTICLE'); 
             return false;
         }
         
-        $lastPost_req = $app->query('SELECT MAX(date) as LAST FROM plugin_blog_comments WHERE author_id = ?', $author_id);
-        $lastPost = $lastPost_req->fetch();
+        $lastPost = db()->select('MAX(date) as LAST')->from('plugin_blog_comments')->where('author_id', $author_id)->fetch();
         $lastPost = $lastPost['LAST'];
 
         if ($lastPost > time()-60) {
@@ -157,16 +148,15 @@ class Blog {
             return false;
         }
         
-        $max_req = $app->query('SELECT MAX(id) as MAX FROM plugin_blog_comments WHERE 1');
-        $max = $max_req->fetch();
-        $id = $max['MAX'] + 1;
+        // $max = db()->select('MAX(id) as MAX')->from('plugin_blog_comments')->fetch();
+        // $id = $max['MAX'] + 1;
         
         if ($date == 0) {
             $date = time();
         }
             
-        $array = array(
-            'id' => $id,
+        $params = array(
+            // 'id' => $id,
             'type' => 'comment',
             'author_id' => $author_id,
             'post_id' => $post_id,
@@ -175,7 +165,10 @@ class Blog {
             'date' => $date
         
         );
+
+        return (bool) db()->insert('plugin_blog_comments')->with($params)->run(true);
         
+        /*
         $parameters = array();
         foreach($array as $key => $value) {
             $parameters[] = $value;
@@ -190,12 +183,11 @@ class Blog {
  
         $query_result = $app->query('INSERT INTO plugin_blog_comments('.$query1.') VALUES ('.$query2.')', $parameters);
         return true;
-
+        */
     }
   
     public function deleteComment($id, $post_id, $checkUserPerm = false) {
-        $app = new App;
-        $rows = $app->query('SELECT * FROM plugin_blog_comments WHERE id = ?', $id)->fetchAll(PDO::FETCH_ASSOC);
+        $rows = db()->select()->from('plugin_blog_comments')->where('id', $id)->fetchAll();
         if (count($rows) !== 1) {
             throw new Exception('UNKNOW_COMMENT'); 
             return false;
@@ -218,8 +210,8 @@ class Blog {
             }
         }
         
-        $rows = $app->query('DELETE FROM plugin_blog_comments WHERE id = ?', $id);
-        if ($rows->rowCount() == 1) {
+        $rows = db()->delete('plugin_blog_comments')->where('id', $id)->count();
+        if ($rows == 1) {
             return true;
         } else {
             throw new Exception('UNKNOW_COMMENT'); 
@@ -229,13 +221,18 @@ class Blog {
 
     public function addArticle($bbcode, $title, $author_id, $picture = '', $state = 0, $date = 0) {
 
-        if (strlen($title) < 3 OR strlen($title) > 32) {
+        if (strlen($title) < 3 OR strlen($title) > 64) {
             throw new Exception('INVALID_TITLE'); 
             return false;
         }
         
         if (!is_numeric($author_id)) {
             throw new Exception('INVALID_AUTHOR'); 
+            return false;
+        }
+        
+        if ($picture !== '' and strpos($picture, 'https://') !== 0 and strpos($picture, '//') !== 0 and strpos($picture, 'http://') !== 0)  {
+            throw new Exception('INVALID_PICTURE'); 
             return false;
         }
         
@@ -249,36 +246,22 @@ class Blog {
             throw new Exception('NO_CONTENT'); 
             return false;
         }
+
+        $bbcode = e($bbcode);
         
-        $str = strtolower( $title );
-        $str = htmlentities($str, ENT_NOQUOTES, 'utf-8');
-        $str = preg_replace('#&([A-za-z])(?:acute|cedil|caron|circ|grave|orn|ring|slash|th|tilde|uml);#', '\1', $str);
-        $str = preg_replace('#&([A-za-z]{2})(?:lig);#', '\1', $str);
-        $str = preg_replace('#&[^;]+;#', '', $str);
-        $str = strtr( $str, ' ', '-');
-        $slug =  preg_replace('/[^A-Za-z0-9-]+/', '', $str);
-        $slug =  trim($slug, '-');
-        $app = new App;
-        /*$alreadySaved = $app->query('SELECT id FROM plugin_blog_posts WHERE slug = ?', $slug);
-        if ($alreadySaved == false) {
-            throw new Exception('ERROR_DATABASE'); 
-            return false;
-        }
-        if ($alreadySaved->rowCount() == 1) {
-            throw new Exception('SLUG_ALREADY_SAVED'); 
-            return false;
-        }*/
+        $slug = slug($title);
         
-        $max_req = $app->query('SELECT MAX(id) as MAX FROM plugin_blog_posts WHERE 1');
-        $max = $max_req->fetch();
-        $id = $max['MAX'] + 1;
+        // $max = db()->select('MAX(id) as MAX')->from('plugin_blog_posts')->fetch();
+        // $id = $max['MAX'] + 1;
         
         if ($date == 0) {
             $date = time();
         }
+        
+        $app = new App;
             
-        $array = array(
-            'id' => $id,
+        $params = array(
+            // 'id' => $id,
             'title' => $title,
             'slug' => $slug,
             'bbcode' => $bbcode,
@@ -289,8 +272,10 @@ class Blog {
             'state' => $state
         
         );
+
+        return (bool) db()->insert('plugin_blog_posts')->with($params)->run(true);
         
-        $parameters = array();
+        /*$parameters = array();
         foreach($array as $key => $value) {
             $this->$key = $value;
             $parameters[] = $value;
@@ -304,12 +289,12 @@ class Blog {
         }
         
         $query_result = $app->query('INSERT INTO plugin_blog_posts('.$query1.') VALUES ('.$query2.')', $parameters);
-        return true;
+        return true;*/
     }
   
     public function editArticle($id, $bbcode, $picture = '', $title = 0, $author_id = 0, $date = 0, $state = 0) {
 
-        if ($title !== 0 and (strlen($title) < 3 OR strlen($title) > 32)) {
+        if ($title !== 0 and (strlen($title) < 3 OR strlen($title) > 64)) {
             throw new Exception('INVALID_TITLE'); 
             return false;
         }
@@ -325,6 +310,11 @@ class Blog {
             return false;
         }
         
+        if ($picture !== '' and (strpos($picture, 'https://') !== 0 and strpos($picture, '//') !== 0 and strpos($picture, 'http://') !== 0))  {
+            throw new Exception('INVALID_PICTURE'); 
+            return false;
+        }
+        
         if ($date !== 0 and (!is_numeric($date))) {
             throw new Exception('INVALID_DATE'); 
             return false;
@@ -333,32 +323,16 @@ class Blog {
         $app = new App;
         
         if ($title !== 0) {
-            $str = strtolower( $title );
-            $str = htmlentities($str, ENT_NOQUOTES, 'utf-8');
-            $str = preg_replace('#&([A-za-z])(?:acute|cedil|caron|circ|grave|orn|ring|slash|th|tilde|uml);#', '\1', $str);
-            $str = preg_replace('#&([A-za-z]{2})(?:lig);#', '\1', $str);
-            $str = preg_replace('#&[^;]+;#', '', $str);
-            $str = strtr( $str, ' ', '-');
-            $slug =  preg_replace('/[^A-Za-z0-9-]+/', '', $str);
-            $slug =  trim($slug, '-');
-            
-            /*$alreadySaved = $app->query('SELECT id FROM plugin_blog_posts WHERE slug = ? AND id != ?', array($slug, $id));
-            if ($alreadySaved == false) {
-                throw new Exception('ERROR_DATABASE'); 
-                return false;
-            }
-            if ($alreadySaved->rowCount() == 1) {
-                throw new Exception('SLUG_ALREADY_SAVED'); 
-                return false;
-            }*/
+            $slug = slug($title);
         }
         
-        $rows = $app->query('SELECT id FROM plugin_blog_posts WHERE id = ?', $id)->fetchAll(PDO::FETCH_ASSOC);
-        $postsExists = count($rows);
-        if ($postsExists !== 1) {
+        $rows = db()->select('id')->from('plugin_blog_posts')->where('id', $id)->count();
+        if ($rows !== 1) {
             throw new Exception('UNKNOW_ARTICLE'); 
             return false;
         }
+
+        $bbcode = e($bbcode);
         
         $array = array(
             'id' => $id,
@@ -386,10 +360,14 @@ class Blog {
         if ($state !== 0) {
             $array['state'] = $state;
         }
-        
-        $parameters = array();
-        foreach($array as $key => $value) {
+
+        foreach($array as $key => $value)
             $this->$key = $value;
+
+        db()->update('plugin_blog_posts')->with($array)->where('id', $id)->run();
+        return true;
+        
+        /*$parameters = array();
             $parameters[] = $value;
             if ( isset($query) ) {
                 $query .= ', ' . $key . '=' . '?';
@@ -401,14 +379,13 @@ class Blog {
         
         $query_result = $app->query('UPDATE plugin_blog_posts SET '.$query.' WHERE id = ?', $parameters);
         return true;
-
+        */
     }
   
     public function deleteArticle($id) {
-        $app = new App;
-        $rows = $app->query('DELETE FROM plugin_blog_posts WHERE id = ?', $id);
-        if ($rows->rowCount() >= 1) {
-            $app->query('DELETE FROM plugin_blog_comments WHERE post_id = ?', $id);
+        $rows = db()->delete('plugin_blog_posts')->where('id', $id)->count();
+        if ($rows >= 1) {
+            db()->delete('plugin_blog_comments')->where('post_id', $id)->run();
             return true;
         } else {
             throw new Exception('UNKNOW_ARTICLE'); 
@@ -416,5 +393,3 @@ class Blog {
         }
     }
 }
-
-?>

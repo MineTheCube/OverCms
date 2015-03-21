@@ -1,0 +1,68 @@
+
+    {ALERT}
+
+<!-- %HIDE_FORM% -->
+<form class="form-horizontal use-ajax" role="form" method="post">
+  <div class="form-group">
+    <div class="col-sm-10 col-sm-offset-2">
+      <h2>{@%BLOG_ACTION%}</h2>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-2 control-label">{@BLOG_TITLE}</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" placeholder="{@BLOG_TITLE_DESC}" name="title" value="%ARTICLE_TITLE%">
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-2 control-label">{@BLOG_PICTURE}</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" placeholder="{@BLOG_PICTURE_DESC}" name="picture" value="%ARTICLE_PICTURE%">
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-2 control-label">{@BLOG_CONTENT}</label>
+    <div class="col-sm-10">
+      %TEXT_EDITOR%
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-2 control-label">{@BLOG_DATE}</label>
+    <div class="col-sm-10">
+      <input type="date" class="form-control" name="date" placeholder="%ARTICLE_DATE%" value="%ARTICLE_DATE%">
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-2 control-label">{@BLOG_HOUR}</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" name="hour" placeholder="%ARTICLE_HOUR%" value="%ARTICLE_HOUR%">
+    </div>
+  </div>
+  
+<div class="collapse" id="accordion" style="height: 0px;">
+  <div class="form-group">
+    <label class="col-sm-2 control-label">{@BLOG_STATE}</label>
+    <div class="col-sm-10">
+      <select name="state" class="form-control">
+        <option value="0">Publier l'article</option>
+        <option value="1">Cacher l'article</option>
+        %OPTIONS%
+        <option value="2">Supprimer l'article</option>
+        %OPTIONS%
+      </select>
+    </div>
+  </div>
+  
+</div>
+  
+  <input type="hidden" class="hidden" name="send" value="1">
+  <input type="hidden" class="hidden" name="method" value="%FORM_METHOD%">
+  <input type="hidden" class="hidden" name="id" value="%ARTICLE_ID%">
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-10">
+      <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-ok"></span> {@BTN_%BTN_ACTION%}</button>
+      <button type="button" class="btn btn-default" onclick="$('#accordion').collapse('toggle')"><span class="glyphicon glyphicon-cog"></span> {@BTN_OPTIONS}</button>
+    </div>
+  </div>
+</form>
+<!-- %HIDE_FORM% -->

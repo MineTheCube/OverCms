@@ -1,0 +1,73 @@
+
+<!-- %BTN_EDIT% -->
+<a href="%URL_EDIT_ARTICLE%" class="btn btn-info btn-block">
+    <span class="glyphicon glyphicon-edit"></span> {@BLOG_EDIT}
+</a>
+<hr>
+<!-- %BTN_EDIT% -->
+
+<!-- %HIDDEN_ARTICLE% -->
+<div class="pull-right">
+    <h3><span class="glyphicon glyphicon-eye-close"></span></h3>
+</div>
+<!-- %HIDDEN_ARTICLE% -->
+<h1>%TITLE%</h1>
+<br>
+<p class="text-muted">%DATE% {@BY} <a href="%URL_AUTHOR%"><b>%AUTHOR%</b></a></p>
+<br>
+<p>
+    %CONTENT%
+</p>
+
+<hr>
+  
+<!-- %USER_NOT_CONNECTED% -->
+  <div class="alert alert-info">{@BLOG_NEED_CONNECTED_TO_COMMENT}</div>
+<!-- %USER_NOT_CONNECTED% -->
+
+    {ALERT}
+
+<!-- %USER_CONNECTED% -->
+<div class="media">
+  <a class="pull-left" href="#">
+    <img class="media-object img-thumbnail" alt="User Picture" src="{CURRENT_USER_PICTURE}" style="width: 64px; height: 64px;">
+  </a>
+  <div class="media-body">
+    <form method="post" class="use-ajax">
+      <textarea name="content" class="form-control" onclick="$('#accordion').collapse('show')" rows="2" style="resize:vertical;" placeholder="{@BLOG_ADD_COMMENT}" required="required">{$content}</textarea>
+      <input type="hidden" class="hidden" name="method" value="add" />
+      <input type="hidden" class="hidden" name="articleId" value="%ARTICLE_ID%" />
+      <div class="collapse" id="accordion" style="height: 0px;">
+          <div class="pull-right" style="padding-top:5px;">
+            <button type="button" class="btn btn-default btn-sm" onclick="$('#accordion').collapse('hide')">{@BTN_CANCEL}</button>
+            <button type="submit" class="btn btn-primary btn-sm">{@BLOG_SEND_COMMENT}</button>
+          </div>
+    </div>
+    </form>
+  </div>
+</div>
+<!-- %USER_CONNECTED% -->
+
+<!-- %COMMENTS% -->
+<div class="media">
+  <a class="pull-left" href="#">
+    <img class="media-object img-thumbnail" alt="User Picture" src="%URL_USER_PICTURE%" style="width: 64px; height: 64px;">
+  </a>
+  <div class="media-body">
+    <div class="pull-right" style="display: inline;">
+      <h5 class="media-heading text-muted" style="display: inline;">%COMMENT_DATE%</h5>
+      <!-- %REMOVE_COMMENT% -->
+      &nbsp;
+      <form method="post" class="use-ajax" style="display: inline;">
+        <input type="hidden" class="hidden" name="send" value="1" />
+        <input type="hidden" class="hidden" name="method" value="remove" />
+        <input type="hidden" class="hidden" name="commentId" value="%COMMENT_ID%" />
+        <button type="submit" class="btn btn-danger btn-xs" style="padding: 1px 3px;line-height: 1.0;"> <span class="glyphicon glyphicon-remove"></span> </button>
+      </form>
+      <!-- %REMOVE_COMMENT% -->
+    </div>
+    <h5 class="media-heading"><a href="%URL_USER%">%COMMENT_USER%</a>:</h5>
+    %COMMENT%
+  </div>
+</div>
+<!-- %COMMENTS% -->

@@ -6,8 +6,11 @@ Class Captcha {
     }
 
     public function check($text) {
-        $session = new Session();
-        $solution = $session->get('capcha');
+
+        if (session_id() == '')
+            session_start();
+
+        $solution = $_SESSION['captcha'];
         if (empty($text) or empty($solution))
             return false;
         if ($solution == $text)
@@ -15,11 +18,20 @@ Class Captcha {
         return false;
     }
     
-    public function generate() {
+    public function get() {
+
+        return HTTP_ROOT.PACKAGE.'captcha/picture.php?/captcha.png';
+
+    }
+
+    public function display() {
+
+        if (session_id() == '')
+            session_start();
 
         $image = @imagecreatetruecolor(114, 42);
         if ($image === false) {
-            throw new Exception('MISSING_IMAGECD');
+            return false;
         }
         
         $background_color = imagecolorallocate($image, 181, 231, 181);
@@ -42,30 +54,30 @@ Class Captcha {
 
         $letters = 'ABCDEFGHIJKLMNPQRSUVWXYZabcdefhijkmnpqrsuvwxyz2345678';
         $len = strlen($letters);
-        $letter = $letters[rand(0, $len - 1)];
 
         $word = "";
         $font = str_replace('captcha.class.php', 'font.ttf', __FILE__);
         for ($i = 0; $i < 5; $i++) {
             $letter = $letters[rand(0, $len - 1)];
-            imagettftext ($image, 16+rand(0,2), rand(-10, 10), 8+($i*22), 23+rand(0, 10), $text_color, $font, $letter);
+            if (ctype_alpha($letter) and ctype_upper($letter))
+                imagettftext ($image, 18, rand(-10, 10), 7+($i*20)+rand(0,2), 23+rand(0, 10), $text_color, $font, $letter);
+            else if (ctype_alpha($letter) and ctype_lower($letter))
+                imagettftext ($image, 16, rand(-10, 10), 7+($i*20)+rand(0,2), 23+rand(0, 10), $text_color, $font, $letter);
+            else
+                imagettftext ($image, 17, rand(-10, 10), 7+($i*20)+rand(0,2), 23+rand(0, 10), $text_color, $font, $letter);
             $word .= $letter;
         }
-        
-        $session = new Session();
-        $session->set('capcha', $word);
+
+        $_SESSION['captcha'] = $word;
         
         imageline($image, 0, 0, 114, 0, $border);
         imageline($image, 0, 0, 0, 42, $border);
         imageline($image, 113, 41, 113, 0, $border);
         imageline($image, 0, 41, 113, 41, $border);
-        
-        ob_start();
+
+        header('Content-Type: image/png');
         imagepng($image);
-        $data = ob_get_clean();
-        $data = base64_encode($data);
-        
-        return "data:image/png;base64,".$data;
+
     }
     
 }

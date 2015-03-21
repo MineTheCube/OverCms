@@ -1,0 +1,8 @@
+
+.mc_server_status > input {
+    cursor: initial !important;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: bold;
+    text-transform: uppercase;
+}

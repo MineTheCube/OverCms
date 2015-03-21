@@ -1,41 +1,22 @@
 <?php
 
-if ( !empty( $request['args'] ) ) {
-    $this->go( $request['slug'] );
-}
+if (REQUEST_ARGS)
+    go(REQUEST_SLUG);
 
 $user = new User;
 $user->setup();
-$tools = new Tools;
 
-if ($user->auth()) {
-    $this->go();
-}
+if ($user->auth())
+    go();
 
-if ( isset( $_POST['send'] ) ) {
-    if ($this->checkToken(true)) {
-        if ($_POST['remember'] == 'on') {
-            $remember = true;
-        } else {
-            $remember = false;
-        }
-        try {
-            $auth = $user->login( $_POST['username'], $_POST['password'], $remember ); 
-        } catch (Exception $e) {
-            $error = '{@' . $e->getMessage() . '}';
-        }
-        if ( $auth and empty( $error ) ) {
-            $page_member = $page->getPage(array('type' => 'native', 'type_data' => 'member' ));
-            $this->go( $page_member['slug'] );
-            exit();
-        }
-    } else {
-        $error = '{@' . 'INVALID_TOKEN' . '}';
+if (POST) {
+    try {
+        $user->login($_POST['username'], $_POST['password'], ($_POST['remember'] == 'true'));
+        $memberPage = $page->getPage(array('type' => 'native', 'type_data' => 'member'));
+        respond(true, 'LOGIN_SUCCESSFUL', $memberPage['slug']);
+    } catch (Exception $e) {
+        respond($e);
     }
 }
 
-$token = $this->getToken();
-
-$content = $page->get('content');
-include ( VIEW . 'login.php');
-$content .= $html;
+include (VIEW.'login'.EX);

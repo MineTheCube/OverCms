@@ -1,0 +1,30 @@
+#simpleHeader {
+    background-image: url(%PICTURE%);
+    width: 100%;
+    background-size: cover;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    color: white;
+}
+#simpleHeader div.container {
+    padding-top: 18px;
+    padding-bottom: 22px;
+}
+#simpleHeader h1 {
+    font-size: 45px;
+    margin: 0;
+    color: white;
+}
+#simpleHeader h3 {
+    font-size: 24px;
+    margin: 0;
+    margin-top: 5px;
+    color: white;
+}
+@media (max-width: 767px) {
+    #simpleHeader h1 {
+        font-size: 30px
+    }
+    #simpleHeader h3 {
+        font-size: 18px;
+    }
+}

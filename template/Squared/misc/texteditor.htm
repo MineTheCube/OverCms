@@ -1,0 +1,207 @@
+<style>
+#texteditor .panel-body {
+    padding: 0;
+}
+#texteditor .panel-heading {
+    padding: 1px 5px;
+}
+#texteditor textarea.form-control {
+    border-radius: 0;
+    border: 0;
+}
+#texteditor.panel-default {
+    border-radius: 0px;
+    border: 1px solid #dce4ec;
+    transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+}
+#texteditor.panel-default .btn-sm {
+    padding: 6px 9px 4px 10px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+#texteditor.panel-default .glyphicon {
+    font-size: 100%;
+}
+#texteditor.panel-default .icon-list {
+    font-size: 17px;
+    padding: 2px 10px 2px 10px;
+    font-family: georgia;
+}
+#texteditor.panel-default .big {
+    font-size: 120%;
+    padding: 2px 8px 0px 6px;
+}
+#texteditor.panel-default .small {
+    font-size: 60%;
+    padding: 9px 12px 7px 11px;
+}
+#texteditor .panel-heading div.inline-block {
+    display: inline-block;
+}
+#texteditor .collapse.in {
+    display: inline-block;
+}
+#texteditor #texteditor-render {
+    padding: 10px 15px;
+}
+</style>
+<div class="panel panel-default" id="texteditor">
+  <div class="panel-heading">
+    <div class="inline-block">
+        <button type="button" data-title="{@TE_MORE}" onclick="textEditorOptions(this)" class="btn btn-primary btn-sm"><span class="glyphicon glyphicon-plus"></span></button>
+    </div>
+    &nbsp;
+    <div class="inline-block pull-right">
+        <button type="button" data-title="{@TE_RENDER}" onclick="textEditorRender(this)" class="btn btn-primary btn-sm"><span class="glyphicon glyphicon-eye-open"></span></button>
+    </div>
+    &nbsp;
+    <div class="inline-block">
+        <button type="button" data-insert="[h1]" data-title="{@TE_BIGTITLE}" class="btn btn-default btn-sm big"><span class="glyphicon glyphicon-header"></span></button>
+        <button type="button" data-insert="[h2]" data-title="{@TE_TITLE}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-header"></span></button>
+        <button type="button" data-insert="[h3]" data-title="{@TE_SUBTITLE}" class="btn btn-default btn-sm small"><span class="glyphicon glyphicon-header"></span></button>
+    </div>
+    &nbsp;
+    <div class="inline-block">
+        <button type="button" data-insert="[b]" data-title="{@TE_BOLD}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-bold"></span></button>
+        <button type="button" data-insert="[i]" data-title="{@TE_ITALIC}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-italic"></span></button>
+        <button type="button" data-insert="[u]" data-title="{@TE_UNDERLINE}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-font" style="text-decoration: underline;"></span></button>
+    </div>
+    &nbsp;
+    <div class="inline-block">
+        <button type="button" data-insert="[url]" data-title="{@TE_LINK}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-link"></span></button>
+        <button type="button" data-insert="[img]" data-title="{@TE_PICTURE}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-picture"></span></button>
+        <button type="button" data-insert="[youtube]" data-title="{@TE_VIDEO}" onclick="alert('{@TE_VIDEO_DESC}')" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-facetime-video"></span></button>
+    </div>
+    &nbsp;
+<div class="collapse" id="texteditor-more" style="height: 0px;">
+    <div class="inline-block">
+        <button type="button" data-insert="[left]" data-title="{@TE_ALIGN_LEFT}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-align-left"></span></button>
+        <button type="button" data-insert="[center]" data-title="{@TE_ALIGN_CENTER}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-align-center"></span></button>
+        <button type="button" data-insert="[right]" data-title="{@TE_ALIGN_RIGHT}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-align-right"></span></button>
+        <button type="button" data-insert="[justify]" data-title="{@TE_ALIGN_JUSTIFY}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-align-justify"></span></button>
+    </div>
+    &nbsp;
+    <div class="inline-block">
+        <button type="button" data-insert="[list]" data-title="{@TE_UNORDERED_LIST}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-list"></span></button>
+        <button type="button" data-insert="[ol]" data-title="{@TE_ORDERED_LIST}" class="btn btn-default btn-sm icon-list">1.</button>
+        <button type="button" data-insert="[*]" data-title="{@TE_LIST_ELEMENT}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-asterisk"></span></button>
+    </div>
+</div>
+  </div>
+  <div class="panel-body">
+      
+    <textarea name="%TEXT_EDITOR_NAME%" id="texteditor-area" class="form-control" rows="3" style="resize:vertical;">%TEXT_EDITOR_CONTENT%</textarea>
+    <input type="hidden" class="hidden" name="markup" value="bbcode">
+    <div id="texteditor-render" style="display: none;">
+        Hey
+    </div>
+    
+  </div>
+</div>
+<script>
+$(function(){
+    (function(){var e={getSelection:function(){var e=this.jquery?this[0]:this;return("selectionStart"in e&&function(){var t=e.selectionEnd-e.selectionStart;return{start:e.selectionStart,end:e.selectionEnd,length:t,text:e.value.substr(e.selectionStart,t)}}||document.selection&&function(){e.focus();var t=document.selection.createRange();if(t===null){return{start:0,end:e.value.length,length:0}}var n=e.createTextRange();var r=n.duplicate();n.moveToBookmark(t.getBookmark());r.setEndPoint("EndToStart",n);return{start:r.text.length,end:r.text.length+t.text.length,length:t.text.length,text:t.text}}||function(){return null})()},replaceSelection:function(){var t=this.jquery?this[0]:this;var n=arguments[0]||"";if(n instanceof Function){var r=e.getSelection.call(t);n=n.call(this,r.text)}return("selectionStart"in t&&function(){t.value=t.value.substr(0,t.selectionStart)+n+t.value.substr(t.selectionEnd,t.value.length);return this}||document.selection&&function(){t.focus();document.selection.createRange().text=n;return this}||function(){t.value+=n;return jQuery(t)})()}};jQuery.each(e,function(e){jQuery.fn[e]=this})})()
+});
+</script>
+<script>
+$(function(){
+    $('#texteditor button').tooltip();
+
+    $('#texteditor button.btn-default').click(function() {
+            var range = $('#texteditor-area').getSelection();
+            $('#texteditor-area').replaceSelection($(this).data('insert')+range.text+$(this).data('insert').replace("[", "[/"));
+            $('#texteditor-area').focus();
+            document.getElementById('texteditor-area').selectionStart = range.start + $(this).data('insert').length;
+            document.getElementById('texteditor-area').selectionEnd = range.end + $(this).data('insert').length;
+    });
+});
+
+function textEditorOptions(obj) {
+    if ($(obj).children().hasClass('glyphicon-plus')) {
+        $('#texteditor-more').collapse('show');
+        $(obj).children().removeClass('glyphicon-plus');
+        $(obj).children().addClass('glyphicon-minus');
+        $(obj).attr('style', 'padding: 6px 10px 4px 9px' );
+    } else {
+        $('#texteditor-more').collapse('hide');
+        $(obj).children().removeClass('glyphicon-minus');
+        $(obj).children().addClass('glyphicon-plus');
+        $(obj).attr('style', 'padding: 6px 9px 4px 10px;' );
+    }
+};
+
+function textEditorRender(obj) {
+    if ($(obj).children().hasClass('glyphicon-eye-open')) {
+        $(obj).children().removeClass('glyphicon-eye-open');
+        $(obj).children().addClass('glyphicon-eye-close');
+        $('#texteditor-area').css('display', 'none');
+        $('#texteditor-render').css('display', 'block');
+        $('#texteditor-render').html( bbcode2html( $('#texteditor-area').val() ) );
+    } else {
+        $(obj).children().removeClass('glyphicon-eye-close');
+        $(obj).children().addClass('glyphicon-eye-open');
+        $('#texteditor-area').css('display', 'block');
+        $('#texteditor-render').css('display', 'none');
+    }
+};
+
+function bbcode2html(bbcode) {
+
+    var bbtags = {
+        '[h1]':'<h1>','[/h1]':'</h1>',
+        '[bigtitle]':'<h1>','[/bigtitle]':'</h1>',
+        '[h2]':'<h2>','[/h2]':'</h2>',
+        '[title]':'<h2>','[/title]':'</h2>',
+        '[h3]':'<h3>','[/h3]':'</h3>',
+        '[subtitle]':'<h3>','[/subtitle]':'</h3>',
+
+        '[p]':'<p>','[/p]':'</p>',
+        '[left]':'<p style="text-align:left;margin: 0;">','[/left]':'</p>',
+        '[right]':'<p style="text-align:right;margin: 0;">','[/right]':'</p>',
+        '[center]':'<p style="text-align:center;margin: 0;">','[/center]':'</p>',
+        '[justify]':'<p style="text-align:justify;margin: 0;">','[/justify]':'</p>',
+
+        '[bold]':'<span style="font-weight:bold;">','[/bold]':'</span>',
+        '[italic]':'<span style="font-style: italic;">','[/italic]':'</span>',
+        '[underline]':'<span style="text-decoration:underline;">','[/underline]':'</span>',
+        '[b]':'<span style="font-weight:bold;">','[/b]':'</span>',
+        '[i]':'<span style="font-style: italic;">','[/i]':'</span>',
+        '[u]':'<span style="text-decoration:underline;">','[/u]':'</span>',
+
+        '[list]':'<ul>','[/list]':'</ul>',
+        '[ul]':'<ul>','[/ul]':'</ul>',
+        '[ol]':'<ol>','[/ol]':'</ol>',
+        '[list_item]':'<li>','[/list_item]':'</li>',
+        '[li]':'<li>','[/li]':'</li>',
+
+        '[*]':'<li>','[/*]':'</li>',
+        '[code]':'<code>','[/code]':'</code>',
+        '[pre]':'<pre>','[/pre]':'</pre>' 
+    };
+
+    for (var val in bbtags) {
+        bbcode = bbcode.split(val).join(bbtags[val]);
+    };
+    
+    bbcode = bbcode.replace(/\[url](.*?)\[\/url]/g, '<a href=\"$1\" target=\"_blank\" title=\"$1\">$1</a>');
+    bbcode = bbcode.replace(/\[url=(.*?)\](.*?)\[\/url\]/g, '<a href=\"$1\" target=\"_blank\" title=\"$1\">$2</a>');
+    bbcode = bbcode.replace(/\[email=(.*?)\](.*?)\[\/email\]/g, '<a href=\"mailto:$1\">$2</a>');
+    bbcode = bbcode.replace(/\[mail=(.*?)\](.*?)\[\/mail\]/g, '<a href=\"mailto:$1\">$2</a>');
+    bbcode = bbcode.replace(/\[img\]([^[]*)\[\/img\]/g, '<img src=\"$1\" alt=\" \" />');
+    bbcode = bbcode.replace(/\[image\]([^[]*)\[\/image\]/g, '<img src=\"$1\" alt=\" \" />');
+    bbcode = bbcode.replace(/\[image_left\]([^[]*)\[\/image_left\]/g, '<img src=\"$1\" alt=\" \" style=\"float: left\" />');
+    bbcode = bbcode.replace(/\[image_right\]([^[]*)\[\/image_right\]/g, '<img src=\"$1\" alt=\" \" style=\"float: right\" />');
+    bbcode = bbcode.replace(/\[youtube\]([^[]*)\[\/youtube\]/g, "<div style=\"position: relative;display: block;height: 0;padding: 0;overflow: hidden;padding-bottom: 56.25%;\"><iframe style=\"position: absolute;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;border: 0;\" src=\"//www.youtube.com/embed/$1\" frameborder=\"0\" allowfullscreen></iframe></div>");
+
+    bbcode = bbcode.replace(new RegExp('\n', 'g'), '<br />');
+    bbcode = bbcode.split('</li><br />').join('</li>');
+    bbcode = bbcode.split('</ol><br />').join('</ol>');
+    bbcode = bbcode.split('</ul><br />').join('</ul>');
+    bbcode = bbcode.split('</p><br />').join('</p>');
+    bbcode = bbcode.split('</h1><br />').join('</h1>');
+    bbcode = bbcode.split('</h2><br />').join('</h2>');
+    bbcode = bbcode.split('</h3><br />').join('</h3>');
+    
+    return bbcode;
+};
+</script>

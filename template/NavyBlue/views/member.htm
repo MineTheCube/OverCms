@@ -1,0 +1,104 @@
+
+    {ALERT}
+
+<form method="post">
+  <div class="input-group">
+    <input type="text" name="member" class="form-control" placeholder="{@SEARCH_USER}" required>
+    <span class="input-group-btn">
+      <button class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span> {@BTN_SEARCH}</button>
+    </span>
+  </div>
+</form>
+
+<!-- %NO_USER_FOUND% -->
+<hr>
+    <div class="row">
+      <div class="col-sm-4">
+        <div class="col-xs-10 col-xs-offset-1">
+          <div class="row">
+            <!-- %USER_EDIT% -->
+              <div class="text-center" style="margin-bottom: 5px;"><a href="{URL_ACCOUNT}" class="btn btn-danger btn-block btn-sm"><span class="glyphicon glyphicon-pencil"></span> {@BTN_EDIT}</a></div>
+            <!-- %USER_EDIT% -->
+            <div class="thumbnail" style="margin-bottom: 0px">
+              <img src="%USER_AVATAR%" alt="%USERNAME%" style="width: 100%" />
+            </div>
+          </div>
+        </div>
+        <h1 class="text-center">%USERNAME%</h1>
+        <hr>
+        <table class="table table-condensed" style="margin-bottom: 0px;">
+          <tbody>
+          <tr>
+            <td>{@REGISTER_DATE_SHORT}:</td>
+            <td>%DATE_CREATION%</td> 
+          </tr>
+          <tr>
+            <td>{@BIRTHDAY_SHORT}:</td>
+            <td>%BIRTHDAY%</td> 
+          </tr>
+          <tr>
+            <td>{@GENDER}:</td>
+            <td>%GENDER%</td> 
+          </tr>
+          <tr>
+            <td>{@CITY}:</td>
+            <td>%CITY%</td> 
+          </tr>
+          <tr>
+            <td>{@COUNTRY}:</td>
+            <td>%COUNTRY%</td> 
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col-sm-8">
+        <!-- %USER_NOT_CONNECTED% -->
+          <div class="alert alert-info">{@NEED_CONNECTED_TO_COMMENT}</div>
+        <!-- %USER_NOT_CONNECTED% -->
+        <!-- %USER_CONNECTED% -->
+        <div class="media">
+          <a class="pull-left" href="#">
+            <img class="media-object img-thumbnail" alt="User Picture" src="{CURRENT_USER_PICTURE}" style="width: 64px; height: 64px;">
+          </a>
+          <div class="media-body">
+            <form method="post" class="use-ajax">
+              <textarea name="content" class="form-control" onclick="$('#accordion').collapse('show')" rows="2" style="resize:vertical;" placeholder="{@ADD_STATUS}" required="required">{$content}</textarea>
+              <input type="hidden" class="hidden" name="method" value="add" />
+              <input type="hidden" class="hidden" name="profilId" value="%PROFIL_ID%" />
+              <div class="collapse" id="accordion" style="height: 0px;">
+                  <div class="pull-right" style="padding-top:5px;">
+                    <button type="button" class="btn btn-default btn-sm" onclick="$('#accordion').collapse('hide')">{@BTN_CANCEL}</button>
+                    <button type="submit" class="btn btn-primary btn-sm">{@SEND_STATUS}</button>
+                  </div>
+            </div>
+            </form>
+          </div>
+        </div>
+        <!-- %USER_CONNECTED% -->
+        <!-- %STATUS% -->
+        <div class="media">
+          <a class="pull-left" href="#">
+            <img class="media-object img-thumbnail" alt="User Picture" src="%URL_USER_PICTURE%" style="width: 64px; height: 64px;">
+          </a>
+          <div class="media-body">
+            <div class="pull-right" style="display: inline;">
+              <h5 class="media-heading text-muted" style="display: inline;">%STATUS_DATE%</h5>
+              <!-- %REMOVE_STATUS% -->
+              &nbsp;
+              <form method="post" style="display: inline;" class="use-ajax">
+                <input type="hidden" class="hidden" name="method" value="remove" />
+                <input type="hidden" class="hidden" name="statusId" value="%STATUS_ID%" />
+                <button type="submit" class="btn btn-danger btn-xs" style="padding: 1px 3px;line-height: 1.0;"> <span class="glyphicon glyphicon-remove"></span> </button>
+              </form>
+              <!-- %REMOVE_STATUS% -->
+            </div>
+            <h5 class="media-heading"><a href="%URL_USER%">%STATUS_USER%</a>:</h5>
+            %STATUS_CONTENT%
+          </div>
+        </div>
+        <!-- %STATUS% -->
+      </div>
+    </div>
+<!-- %NO_USER_FOUND% -->
+
+

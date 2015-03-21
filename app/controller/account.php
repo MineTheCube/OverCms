@@ -1,85 +1,61 @@
 <?php
 
-if ( !empty( $request['args'] ) ) {
-    $this->go( $request['slug'] );
-}
+if (REQUEST_ARGS)
+    go(REQUEST_SLUG);
 
 $user = new User;
 $user->setup();
-$tools = new Tools;
 
 if (!$user->auth()) {
-    $app = new App;
-    $page_login = $page->getPage(array('type' => 'native', 'type_data' => 'login' ));
-    $app->go( $page_login['slug'] );
+    $pageLogin = $page->getPage(array('type' => 'native', 'type_data' => 'login'));
+    go($pageLogin['slug']);
 }
 
-if ( $_POST['send_avatar'] == 1 ) {
-    if ($this->checkToken(true)) {
-        if (empty($_POST['avatar_url']))
-            $data = $_FILES['avatar_file'];
-        else
-            $data = $_POST['avatar_url'];
-        try {
-            $picture = $user->update( $user->get('id'), 'avatar', $data ); 
-        } catch (Exception $e) {
-            $error = '{@' . $e->getMessage() . '}';
-        }
-        if ( $picture and empty( $error ) )
-            $success = '{@' . 'MODIFICATION_SUCCESSFUL' . '}';
-        else {
-            $error = '{@' . 'UNKNOW_ERROR' . '}';
-        }
-    } else {
-        $error = '{@' . 'INVALID_TOKEN' . '}';
+if (POST_METHOD === 'updateAvatar') {
+    if (empty($_POST['avatar_url']))
+        $data = $_FILES['avatar_file'];
+    else
+        $data = $_POST['avatar_url'];
+    try {
+        $r = $user->update($user->get('id'), 'avatar', $data); 
+        respond($r);
+    } catch (Exception $e) {
+        respond($e);
     }
-} else if ( $_POST['send_password'] == 1 ) {
-    if ($this->checkToken(true)) {
-        try {
-            $password = $user->update( $user->get('id'), 'password', $_POST['old-password'], $_POST['password'], $_POST['confirm-password'] ); 
-        } catch (Exception $e) {
-            $error = '{@' . $e->getMessage() . '}';
-        }
-        if ( $password and empty( $error ) ) {
-            $success = '{@' . 'MODIFICATION_SUCCESSFUL' . '}';
-        }
-    } else {
-        $error = '{@' . 'INVALID_TOKEN' . '}';
+} else if (POST_METHOD === 'updatePassword') {
+    try {
+        $r = $user->update( $user->get('id'), 'password', $_POST['old-password'], $_POST['password'], $_POST['confirm-password'] ); 
+        respond($r);
+    } catch (Exception $e) {
+        respond($e);
     }
-} else if ( $_POST['send_email'] == 1 ) {
-    if ($this->checkToken(true)) {
-        try {
-            $email = $user->update( $user->get('id'), 'email', $_POST['email'], $_POST['confirm-email'] ); 
-        } catch (Exception $e) {
-            $error = '{@' . $e->getMessage() . '}';
+} else if (POST_METHOD === 'updateEmail') {
+    try {
+        $r = $user->update( $user->get('id'), 'email', $_POST['email'], $_POST['confirm-email'] ); 
+        if ($r and with(new Config)->get('user.settings.verifymail', false)) {
+            $user->logout();
+            $pageLogin = $page->getPage(array('type' => 'native', 'type_data' => 'login'));
+            setFlash(true, 'PLEASE_CONFIRM_NEW_MAIL');
+            ajax(true, 'PLEASE_CONFIRM_NEW_MAIL', $pageLogin['slug']);
+            go($pageLogin['slug']);
+        } else {
+            respond($r);
         }
-        if ( $email and empty( $error ) ) {
-            $success = '{@' . 'MODIFICATION_SUCCESSFUL' . '}';
-        }
-    } else {
-        $error = '{@' . 'INVALID_TOKEN' . '}';
+    } catch (Exception $e) {
+        respond($e);
     }
-} else if ( $_POST['send_profil'] == 1 ) {
-    if ($this->checkToken(true)) {
-        try {
-            $profil = $user->update( $user->get('id'), 'profil', $_POST['birthday'], $_POST['gender'], $_POST['city'], $_POST['country'] ); 
-        } catch (Exception $e) {
-            $error = '{@' . $e->getMessage() . '}';
-        }
-        if ( $profil and empty( $error ) ) {
-            $success = '{@' . 'MODIFICATION_SUCCESSFUL' . '}';
-        }
-    } else {
-        $error = '{@' . 'INVALID_TOKEN' . '}';
+} else if (POST_METHOD === 'updateProfil') {
+    try {
+        $r = $user->update( $user->get('id'), 'profil', $_POST['birthday'], $_POST['gender'], $_POST['city'], $_POST['country'] ); 
+        respond($r);
+    } catch (Exception $e) {
+        respond($e);
     }
 }
 
-$token = $this->getToken();
 
 // refresh user
 $user->setup();
 $profil = json_decode($user->get('profil'));
 
-$content = $page->get('content');
-include ( VIEW . 'account.php');
-$content .= $html;
+include (VIEW.'account'.EX);

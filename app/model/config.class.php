@@ -3,11 +3,11 @@
 class Config {
 
     private $configFile;
-    private $configJson;
+    private $configData;
     
     function __construct($path = null) {
         if ($path === null) {
-            $path = DATA . "config.cfg.php";
+            $path = DATA . CONFIG;
         }
         if (!file_exists($path)) {
             throw new Exception("FILE_NOT_FOUND");
@@ -17,17 +17,18 @@ class Config {
         $this->getConfig();
     }
 
-    public function get($key = null, $default = null) {
+    public function get($path = null, $default = null) {
+        if(strpos($path, '->')) throw new Exception("Config doesnt use arrows anymore.");
         $return = $this->getConfig();
-        if ($key === null)
+        if ($path === null)
             return $return;
-        $keys = explode('->', $key);
-        foreach($keys as $key) {
-            if (!isset($return->$key)) {
+        foreach(explode('.', $path) as $key) {
+            if (isset($return[$key])) {
+                $return = $return[$key];
+            } else {
                 $unknow = true;
                 break;
             }
-            $return = $return->$key;
         }
         if ($unknow and $default === null) {
             throw new Exception("UNKNOW_CONFIG_DATA");
@@ -37,45 +38,58 @@ class Config {
         return $return;
     }
 
-    public function exists($key) {
+    public function exists($path) {
+        if(strpos($path, '->')) throw new Exception("Config doesnt use arrows anymore.");
         $config = $this->getConfig();
-        $keys = explode('->', $key);
-        foreach($keys as $key) {
-            if (!isset($config->$key))
-                $unknow = true;
-            $config = $config->$key;
+        foreach(explode('.', $path) as $key) {
+            if (isset($config[$key]))
+                $config = $config[$key];
+            else
+                return false;
         }
-        if ($unknow)
-            return false;
         return true;
     }
 
-    public function set($key, $value) {
-        $configArray = json_decode(json_encode($this->configJson), true);
-        $keys = explode('->', $key);
-        $count = count($keys);
-        $insert = $value;
-        for ($i = $count-1; $i >= 0; $i--) {
-            $insert = array(
-                $keys[$i] => $insert
-            );
+    public function set($path, $value) {
+        if(strpos($path, '->')) throw new Exception("Config doesnt use arrows anymore.");
+        $array = $this->getConfig();
+        $tmp = &$array;
+        foreach(explode('.', $path) as $key) {
+            if (!isset($tmp[$key]))
+                $tmp[$key] = array();
+            $tmp = &$tmp[$key];
         }
-        $newConfig = array_replace_recursive( $configArray, $insert );
-        $this->configJson = json_decode(json_encode($newConfig));
+        $tmp = $value;
+        $this->configData = $array;
         return true;
     }
 
-    public function delete($key) {
-        if (preg_match('/^[a-zA-Z0-9](([a-zA-Z0-9]|(\-\>))+[a-zA-Z0-9])$/', $key)) {
-            eval('unset($this->configJson->'.$key.');');
+    public function delete($path = null) {
+        if(strpos($path, '->')) throw new Exception("Config doesnt use arrows anymore.");
+        if (is_null($path)) {
+            $this->configData = array();
             return true;
         }
-        return false;
+        $array = $this->getConfig();
+        $tmp = &$array;
+        $keys = explode('.', $path);
+        while (count($keys) > 1) {
+            $key = array_shift($keys);
+            if (isset($tmp[$key]))
+                $tmp = &$tmp[$key];
+            else
+                return false;
+        }
+        $key = array_shift($keys);
+        unset($tmp[$key]);
+        $this->configData = $array;
+        return true;
     }
 
-    public function save() {
-        $json = json_encode($this->configJson);
-        $json = $this->beautify( $json );
+    public function save($beautify = true) {
+        $json = json_encode($this->configData);
+        if ($beautify)
+            $json = $this->beautify($json);
         $json = '<?php/*' . PHP_EOL . $json . PHP_EOL . '*/?>';
         file_put_contents($this->configFile, $json);
         return true;
@@ -87,25 +101,25 @@ class Config {
     }
 
     private function getConfig($refresh = false) {
-        if ($this->configJson == null or !isset($this->configJson) or $refresh) {
+        if (!isset($this->configData) or $refresh) {
             $file = file_get_contents($this->configFile);
             $fileJson = substr($file, 7, -4);
-            $this->configJson = json_decode($fileJson);
-            if (empty($this->configJson) and $this->configFile == DATA . "config.cfg.php") {
+            $this->configData = json_decode($fileJson, true);
+            if (empty($this->configData) and $this->configFile == DATA . CONFIG) {
                 echo 'Cannot load CMS configuration.';
                 exit();
             }
         }
-        return $this->configJson;
+        return $this->configData;
     }
 
-    public function beautify( $rawJson ) {
+    public function beautify($rawJson) {
         $result = '';
         $level = 0;
         $in_quotes = false;
         $in_escape = false;
         $ends_line_level = NULL;
-        $json_length = strlen( $rawJson );
+        $json_length = strlen($rawJson);
 
         for( $i = 0; $i < $json_length; $i++ ) {
             $char = $rawJson[$i];

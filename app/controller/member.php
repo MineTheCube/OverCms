@@ -1,13 +1,12 @@
 <?php
 
 $user = new User;
-$tools = new Tools;
 
-if (isset($_POST['member'])) {
+if (POST and isset($_POST['member'])) {
     if (empty($_POST['member'])) {
-        $this->go( $request['slug'] );
+        go(REQUEST_SLUG);
     } else {
-        $this->go( $request['slug'] . '/' . $_POST['member'] );
+        go(REQUEST_SLUG .'/'. str_limit($_POST['member'], 50));
     }
 }
 
@@ -16,48 +15,42 @@ $viewer->setup();
 $userAuth = $viewer->auth();
 
 $userFound = true;
-if ( empty( $request['args'] ) ) {
+if (!REQUEST_ARGS) {
     $user_exist = $user->setup();
     if ($user_exist === false) {
-        $alert = '{@' . 'USER_NEED_SEARCH' . '}';
+        respond(false, 'USER_NEED_SEARCH');
         $userFound = false;
     }
 } else {
-    $user_req = explode('/', $request['args']);
-    $username = $user_req[0];
-    if ( !empty( $user_req[1] ) ) {
-        $this->go( $request['slug'] . '/' . $user_req[0] );
-    }
+    $username = head(explode('/', REQUEST_ARGS));
     $user_exist = $user->setup($username);
     if ($user_exist === false) {
-        $alert = '{@' . 'USER_UNKNOWN' . '}';
+        respond(false, 'USER_UNKNOWN');
         $userFound = false;
     } else {
-        define( 'TITLE', '{@PROFIL_OF} ' . $user->get('username') );
+        define('TITLE', '{@PROFIL_OF} ' . $user->get('username'));
     }
 }
 
-if ( $_POST['send'] == 1 and $_POST['method'] == 'add' and empty($alert) and $viewer->auth() ) {
+if (POST_METHOD === 'add' and !hasFlash() and $viewer->auth()) {
     if ($_POST['profilId'] === $user->get('id')) {
         try {
             $user->addStatus($_POST['content'], $viewer->get('id'), $_POST['profilId']);
-            $success = '{@' . 'STATUS_ADDED' . '}';
+            respond(true, 'STATUS_ADDED', '$');
             $_POST['content'] = '';
         } catch (Exception $e) {
-            $error = '{@' . $e->getMessage() . '}';
+            respond($e);
         }
     } else {
-        $error = '{@' . 'UNKNOW_USER' . '}';
+        respond(false, 'UNKNOW_USER');
     }
-} else if ( $_POST['send'] == 1 and $_POST['method'] == 'remove' and empty($alert) and $viewer->auth() ) {
+} else if (POST_METHOD === 'remove' and !hasFlash() and $viewer->auth()) {
     try {
         $user->deleteStatus($_POST['statusId'], $user->get('id'), true);
-        $success = '{@' . 'STATUS_REMOVED' . '}';
+        respond(true, 'STATUS_REMOVED', '$');
     } catch (Exception $e) {
-        $error = '{@' . $e->getMessage() . '}';
+        respond($e);
     }
 }
 
-$content = $page->get('content');
-include ( VIEW . 'member.php');
-$content .= $html;
+include (VIEW . 'member.php');

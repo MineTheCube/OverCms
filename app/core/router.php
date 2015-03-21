@@ -15,16 +15,16 @@ $page = new Page;
 // CHECK IF URL IS CORRECT
 /* ============================== */
 // Get requested url
-if (URL_REWRITE) {
-    // Rewrite On
-    $request_uri = urldecode($_SERVER['REQUEST_URI']); 
-    $request_uri = substr( $request_uri , 1 );
-} else {
-    // Rewrite Off
+if (URL_REWRITE)
+    $request_uri = substr(urldecode($_SERVER['REQUEST_URI']), 1);
+else
     $request_uri = $_GET['page'];
-}
-if ( ROOT != '' ) {
-    $request_uri = str_replace( ROOT, '', $request_uri );
+// Remove root from uri
+if (ROOT) {
+    $pos = strpos($request_uri, ROOT);
+    if ($pos === 0) {
+        $request_uri = substr($request_uri, strlen(ROOT));
+    }
 }
 // Add trailing slash
 if ( substr($request_uri, -1) != '/' && !empty($request_uri) ) {
@@ -32,6 +32,20 @@ if ( substr($request_uri, -1) != '/' && !empty($request_uri) ) {
     exit();
 }
 $request_uri = substr( $request_uri, 0, -1);
+/* ============================== */
+
+
+// THROW EVENT
+/* ============================== */
+$event = new Event;
+$event->request_uri = $request_uri;
+$event->args = explode('/', $request_uri);
+EventManager::fire('onNewRequest', $event);
+if ($event->isCancelled()) {
+    if (DEBUG)
+        echo '<!-- Debug: Event onNewRequest cancelled -->';
+    exit();
+}
 /* ============================== */
 
 
@@ -57,7 +71,7 @@ if ( $page->slugExist($url_parts[1], true) and $page->slugExist($url_parts[0], f
     $request['current'] = $request['slug'];
 } else {
     $page_error = $page->getPage(array('type' => 'native', 'type_data' => 'error' ));
-    $this->go( $page_error['slug'] . '/404');
+    go( $page_error['slug'] . '/404');
 }
 /* ============================== */
 
@@ -70,7 +84,7 @@ define('REQUEST_ARGS', $request['args']);
 /* ============================== */
 
 
-   /*********************************/
-  /***/ $this->prepare($request); /***/
-   /*********************************/
+   /*******************************/
+  /***/ $this->start($request); /***/
+   /******************************/
 

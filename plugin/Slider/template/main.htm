@@ -1,0 +1,45 @@
+<div id="carousel-main" class="carousel slide" data-ride="carousel" data-interval="8000">
+  <!-- Indicators -->
+  <ol class="carousel-indicators">
+    <!-- %INDICATOR% -->
+    <li data-target="#carousel-main" data-slide-to="%INDICATOR_INDEX%" class="%INDICATOR_ACTIVE%"></li>
+    <!-- %INDICATOR% -->
+  </ol>
+
+  <!-- Wrapper for slides -->
+  <div class="carousel-inner">
+    <!-- %SLIDE% -->
+    <div class="item %SLIDE_ACTIVE%" style="background-image: url('%IMAGE%');">
+      <div class="carousel-caption">
+        <h1 class="animated %EFFECT_TITLE%">%SLIDE_TITLE%</h1>
+        <p class="animated %EFFECT_DESC%">%SLIDE_DESC%</p>
+      </div>
+    </div>
+    <!-- %SLIDE% -->
+  </div>
+
+  <!-- Controls -->
+  <a class="left carousel-control" href="#carousel-main" role="button" data-slide="prev">
+    <span class="glyphicon glyphicon-chevron-left"></span>
+  </a>
+  <a class="right carousel-control" href="#carousel-main" role="button" data-slide="next">
+    <span class="glyphicon glyphicon-chevron-right"></span>
+  </a>
+</div>
+
+<script type="text/javascript">
+$(function(){
+    $('#carousel-main').on('slide.bs.carousel', function (e) {
+        $(e.relatedTarget).find('.animated').each(function() {
+            var item = $(this);
+            var classes = item.attr('class');
+            item.attr('class', '');
+            item.hide();
+            setTimeout(function(){
+                item.show();
+                item.addClass(classes);
+            }, 10);
+        });
+    });
+});
+</script>

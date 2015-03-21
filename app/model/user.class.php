@@ -16,6 +16,7 @@ class User {
     private $picture;
     
     const REGEX_USERNAME = '/^[a-zA-Z0-9_]+$/';
+    const REGEX_EMAIL = '/^[0-9a-zA-Z-_\.]{3,32}\@[0-9a-zA-Z\-\.]{3,32}\.[a-zA-Z]{2,5}$/';
     
     public function __construct() {
     }
@@ -26,10 +27,10 @@ class User {
         $session = new Session;
         
         if (empty($username)) {
-            if ($session->get('username') !== false) {
-                $username = $session->get('username');
-                $rows = $app->query('SELECT * FROM cms_users where username = ?', array($username))->fetchAll(PDO::FETCH_ASSOC);
-                if (count($rows) == 0) {
+            if ($session->get('userAuth') !== false) {
+                list($id, $username) = explode(':', $session->get('userAuth'), 2);
+                $rows = db()->select()->from('cms_users')->where('username', $username)->andWhere('id', $id)->count();
+                if ($rows !== 1) {
                     $this->logout();
                 } else {
                     $this->auth = true;
@@ -37,19 +38,19 @@ class User {
             } else {
                 
                 $canAutoLogin = false;
-                if (isset ($_COOKIE['6d08b1ef564521cd891bfaad4b3001ab'], $_COOKIE['5596058f6b09e484c949bc79b1d78008'], $_COOKIE['b953e16cc92aea25727a626512196c8e'])) {
+                if (isset($_COOKIE['6d08b1ef564521cd891bfaad4b3001ab'], $_COOKIE['5596058f6b09e484c949bc79b1d78008'], $_COOKIE['b953e16cc92aea25727a626512196c8e'])) {
                     
                     $password = $app->decrypt($_COOKIE['6d08b1ef564521cd891bfaad4b3001ab']);
                     $id = $app->decrypt($_COOKIE['5596058f6b09e484c949bc79b1d78008']);
                     $username = $app->decrypt($_COOKIE['b953e16cc92aea25727a626512196c8e']);
                     
                     if (ctype_digit($id) and preg_match(self::REGEX_USERNAME, $username)) {
-                        $rows = $app->query('SELECT * FROM cms_users where id = ? AND username = ?', array($id, $username))->fetchAll(PDO::FETCH_ASSOC);
+                        $rows = db()->select()->from('cms_users')->where('id', $id)->andWhere('username', $username)->fetchAll();
                         if (count($rows) === 1) {
                             $autologin = $rows[0];
                             if ($password === hash('sha256', $autologin['password']) and $autologin['id'] === $id and $autologin['username'] === $username) {
                                 // Seems legit
-                                $session->set('username', $autologin['username']);
+                                $session->set('userAuth', $autologin['id'].':'.$autologin['username']);
                                 $canAutoLogin = true;
                             }
                         }
@@ -79,9 +80,9 @@ class User {
         }
         
         // Get database
-        $rows = $app->query('SELECT * FROM cms_users where '.$method.' = ?', array($username))->fetchAll(PDO::FETCH_ASSOC);
+        $rows = db()->select()->from('cms_users')->where($method, $username)->fetchAll();
         
-        if (count($rows) == 1) {
+        if (count($rows) === 1) {
             $user = $rows[0];
             foreach($user as $key => $value) {
                 $this->$key = $value;
@@ -115,13 +116,27 @@ class User {
     }
     
     public function auth() {
-        return $this->auth;
+        return (bool) $this->auth;
+    }
+    
+    public function canView(Page $page) {
+        return (
+            (int) $this->get('permission')
+            >=
+            (int) $page->get('p_view')
+        );
+    }
+    
+    public function canEdit(Page $page) {
+        return (
+            (int) $this->get('permission')
+            >=
+            (int) $page->get('p_edit')
+        );
     }
     
     public function create($username, $email, $password, $confirmpassword) {
     
-        $app = new App;
-        
         if ($password != $confirmpassword) {
             throw new Exception('PASSWORD_NOT_THE_SAME'); 
             return false;
@@ -138,44 +153,70 @@ class User {
             throw new Exception('PASSWORD_LENGHT'); 
             return false;
         }
-        if (!preg_match('/^[[:alnum:][:punct:]]{3,32}@[[:alnum:]-.$nonASCII]{3,32}\.[[:alpha:].]{2,5}$/', $email)) {
+        if (!preg_match(self::REGEX_EMAIL, $email)) {
             throw new Exception('EMAIL_INCORRECT'); 
             return false;
         }
-        $rows = $app->query('SELECT id FROM cms_users WHERE username = ?', $username)->fetchAll(PDO::FETCH_ASSOC);
-        if (count($rows) !== 0) {
+        $rows = db()->select('id')->from('cms_users')->where('username', $username)->count();
+        if ($rows !== 0) {
             throw new Exception('ALREADY_USERNAME'); 
             return false;
         }
-        $rows = $app->query('SELECT id FROM cms_users WHERE email = ?', $email)->fetchAll(PDO::FETCH_ASSOC);
-        if (count($rows) !== 0) {
+        $rows = db()->select('id')->from('cms_users')->where('email', $email)->count();
+        if ($rows !== 0) {
             throw new Exception('ALREADY_EMAIL'); 
             return false;
         }
-        
-        
-        $max_req = $app->query('SELECT MAX(id) as MAX FROM cms_users WHERE 1');
-        $max = $max_req->fetch();
-        $id = $max['MAX'] + 1;
-        
-        $password = hash('sha256', $password . '^#$');
-        $config = new Config;
-        
-        $user_id = $id;
-        $user_username = $username;
-        $user_password = $password;
-        $user_email = $email;
-        $user_date_creation = time();
-        $user_permission = 1;
-        $user_picture_url = "";
-        $user_profil = "";
-        if ($config->get('user->settings->verifymail', false)) {
+
+        $event = new Event(array(
+            'username' => $username,
+            'password' => $password,
+            'email' => $email,
+            'date_creation' => time(),
+            'picture_url' => '',
+            'permission' => 1,
+            'profil' => ''
+        ));
+
+        EventManager::fire('onUserRegister', $event);
+
+        if ($event->isCancelled() and $event->cancelReason())
+            throw new Exception($event->cancelReason());
+                
+        $user_username = $event->username;
+        $user_password = hash('sha256', $event->password . '^#$');
+        $user_email = $event->email;
+        $user_date_creation = $event->date_creation;
+        $user_permission = $event->permission;
+        $user_picture_url = $event->picture_url;
+        $user_profil = $event->profil;
+
+        if (with(new Config)->get('user.settings.verifymail', false)) {
             $token = new StdClass();
             $token->key = substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 20);
             $token->type = 'confirm-mail'; 
             $token->last = time(); 
             $user_token = json_encode($token);
-            
+            $sendMail = true;
+        } else {
+            $user_token = '';
+            $sendMail = false;
+        }
+        
+        $parameters = array (
+            'username' => $user_username,
+            'password' => $user_password,
+            'email' => $user_email,
+            'date_creation' => $user_date_creation,
+            'permission' => $user_permission,
+            'picture_url' => $user_picture_url,
+            'profil' => $user_profil,
+            'token' => $user_token
+        );
+
+        $user_id = db()->insert('cms_users')->with($parameters)->run()->lastInsertId();
+
+        if ($sendMail) {
             $page = new Page;
             $mail = new Mail;
             $page_register = $page->getPage(array('type' => 'native', 'type_data' => 'register' ));
@@ -187,34 +228,17 @@ class User {
             $message = Translate::get('EMAIL_CONFIRMATION_INSTRUCTIONS');
             $message = str_replace('%link%', $link, $message);
             $mail->send($email, $subject, nl2br($message), true);
-
-        } else {
-            $user_token = '';
         }
-        
-        $parameters = array (
-            '0' => $user_id,
-            '1' => $user_username,
-            '2' => $user_password,
-            '3' => $user_email,
-            '4' => $user_date_creation,
-            '5' => $user_permission,
-            '6' => $user_picture_url,
-            '7' => $user_profil,
-            '8' => $user_token
-        );
-
-        $query_result = $app->query('INSERT INTO cms_users(id, username, password, email, date_creation, permission, picture_url, profil, token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', $parameters);
         
         return true;      
     }
     
-    public function login($username, $password, $remember) {
+    public function login($username, $password, $remember = false) {
     
         $app = new App;
         $session = new Session;
         
-        $rows = $app->query('SELECT id, username, password, token FROM cms_users WHERE username = ?', $username)->fetchAll(PDO::FETCH_ASSOC);
+        $rows = db()->select()->from('cms_users')->where('username', $username)->fetchAll();
         $user_get = $rows[0];
         $token = json_decode($user_get['token']);
         if (empty($token)) $token = new StdClass;
@@ -227,33 +251,51 @@ class User {
             $error = 'PASSWORD_INCORRECT';
             throw new Exception($error); 
             return false;
-        } else if (!empty($token->type) and $token->type !== 'recovery') {
-            $error = 'MAIL_NOT_CONFIRMED';
-            throw new Exception($error);
-            return false;
-        } else {
-            $session->regen(true);
-            $session->set('username', $username);
-            if ($remember === true) {
-                $date = time() + 3600*24*14;
-                $cookiePassword = $app->crypt( hash('sha256', $user_get['password']) );
-                $cookieId =       $app->crypt(                $user_get['id']        );
-                $cookieUsername = $app->crypt(                $user_get['username']  );
-                setCookie('6d08b1ef564521cd891bfaad4b3001ab', $cookiePassword, $date , '/');
-                setCookie('5596058f6b09e484c949bc79b1d78008', $cookieId,       $date , '/');
-                setCookie('b953e16cc92aea25727a626512196c8e', $cookieUsername, $date , '/');
+        } else if (!empty($token->type) and $token->type === 'confirm-mail') {
+            if (with(new Config)->get('user.settings.verifymail', true)) {
+                $error = 'MAIL_NOT_CONFIRMED';
+                throw new Exception($error);
+                return false;
+            } else {
+                db()->update('cms_users')->with(array('token' => ''))->where('id', $user_get['id'])->save();
             }
-            return true;
         }
+
+        $event = new Event(array(
+            'username' => $username,
+            'password' => $password,
+            'remember' => $remember
+        ));
+
+        EventManager::fire('onUserLogin', $event);
+
+        if ($event->isCancelled() and $event->cancelReason())
+            throw new Exception($event->cancelReason());
+
+        if (!empty($token) and $token->type === 'recovery')
+            db()->update('cms_users')->with(array('token' => ''))->where('id', $user_get['id'])->save();
+        $session->regen();
+        $session->set('userAuth', $user_get['id'].':'.$user_get['username']);
+        if ($remember === true) {
+            $date = time() + 3600*24*14;
+            $cookiePassword = $app->crypt( hash('sha256', $user_get['password']) );
+            $cookieId =       $app->crypt(                $user_get['id']        );
+            $cookieUsername = $app->crypt(                $user_get['username']  );
+            setCookie('6d08b1ef564521cd891bfaad4b3001ab', $cookiePassword, $date , '/');
+            setCookie('5596058f6b09e484c949bc79b1d78008', $cookieId,       $date , '/');
+            setCookie('b953e16cc92aea25727a626512196c8e', $cookieUsername, $date , '/');
+        }
+        return true;
         
     }
     
     public function logout() {
-        unset( $_SESSION['username'] );
+        $session = new Session;
+        $session->delete('userAuth');
         setCookie('6d08b1ef564521cd891bfaad4b3001ab', null, -1, '/');
         setCookie('5596058f6b09e484c949bc79b1d78008', null, -1, '/');
         setCookie('b953e16cc92aea25727a626512196c8e', null, -1, '/');
-        session_regenerate_id(true);
+        $session->regen();
         return true;
     }
     
@@ -264,9 +306,100 @@ class User {
         if (empty($userToken))
             return false;
         if (!empty($userToken->key) and $userToken->key == $token) {
-            $app = new App;
-            $result = $app->query('UPDATE cms_users SET token = "" WHERE id = ?', array($this->id));
-            return $result;
+            $result = db()->update('cms_users')->with(array('token' => ''))->where('id', $this->id)->run();
+            return true;
+        }
+        return false;
+    }
+
+    public function getUsers($search = null) {
+        if (empty($search))
+            $rows = db()->select()->from('cms_users')->orderBy('permission', 'DESC')->fetchAll();
+        else
+            $rows = db()->select()->from('cms_users')->where('username', 'LIKE', "%$search%")->orWhere('email', 'LIKE', "%$search%")->orderBy('permission', 'DESC')->fetchAll();
+        return $rows;
+    }
+
+    public function adminUpdate($id, $username, $email, $permission) {
+        if (!ctype_digit($id) and !is_int($id)) return false;
+        if (!ctype_digit($permission) and !is_int($permission)) return false;
+
+        if (strlen($username) < 3 OR strlen($username) > 16) {
+            throw new Exception('USERNAME_LENGHT'); 
+            return false;
+        }
+        if (!preg_match(self::REGEX_USERNAME, $username)) {
+            throw new Exception('USERNAME_INCORRECT'); 
+            return false;
+        }
+        if (!preg_match(self::REGEX_EMAIL, $email)) {
+            throw new Exception('EMAIL_INCORRECT'); 
+            return false;
+        }
+        $rows = db()->select('id')->from('cms_users')->where('username', $username)->fetchAll();
+        if (count($rows) > 1 or (count($rows) === 1 and $rows[0]['id'] !== (string) $id)) {
+            throw new Exception('ALREADY_USERNAME'); 
+            return false;
+        }
+        $rows = db()->select('id')->from('cms_users')->where('email', $email)->fetchAll();
+        if (count($rows) > 1 or (count($rows) === 1 and $rows[0]['id'] !== (string) $id)) {
+            throw new Exception('ALREADY_EMAIL'); 
+            return false;
+        }
+
+        $user = new User;
+        $user->setup();
+
+        $row = db()->select()->from('cms_users')->where('id', $id)->fetch();
+        if ($row['permission'] == 9) {
+            if ($user->get('permission') <= 4) {
+                throw new Exception('NO_PERMISSION');
+                return false;
+            }
+        }
+
+        if ($user->get('permission') <= 4 and $permission > 4) {
+                throw new Exception('NO_PERMISSION');
+                return false;
+        }
+
+        $result = db()->update('cms_users')->with(array(
+            'username' => $username,
+            'email' => $email,
+            'permission' => $permission
+            ))->where('id', $id)->run(true);
+
+        return $result->rowCount() >= 1;
+    }
+
+    public function delete($id) {
+        if (!ctype_digit($id) and !is_int($id)) return false;
+
+        $row = db()->select()->from('cms_users')->where('id', $id)->fetch();
+        if (empty($row))
+            return false;
+
+        if ($row['permission'] == 9) {
+            throw new Exception('CANT_DELETE_USER');
+            return false;
+        }
+
+        $event = new Event($row);
+        $event->setCancellable(false);
+
+        EventManager::fire('onUserDelete', $event);
+
+        db()->delete('cms_user_status')->where('id', $id)->run();
+        $result = db()->delete('cms_users')->where('id', $id)->run(true);
+        if ($result->rowCount() >= 1) {
+            if ( file_exists( AVATAR . $id . '.png' ) ) {
+                @unlink( AVATAR . $id . '.png' );
+            } else if ( file_exists( AVATAR . $id . '.jpg' ) ) {
+                @unlink( AVATAR . $id . '.jpg' );
+            } else if ( file_exists( AVATAR . $id . '.jpeg' ) ) {
+                @unlink( AVATAR . $id . '.jpeg' );
+            }
+            return true;
         }
         return false;
     }
@@ -274,12 +407,11 @@ class User {
     public function generatePassword($user_id) {
     
         $page = new Page;
-        $app = new App;
         $mail = new Mail;
         $user = new User;
         
-        $user->setup($user_id, 'id');
-        if ($user->get('id') == 0)
+        $result = $user->setup($user_id, 'id');
+        if ($user->get('id') == 0 or $result === false)
             return false;
     
         $page_login = $page->getPage(array('type' => 'native', 'type_data' => 'login' ));
@@ -294,17 +426,18 @@ class User {
         $message = str_replace('%link%', $link, $message);
         $mail->send($toEmail, $subject, nl2br($message), true);
         $password = hash('sha256', $password . '^#$');
-        $app->query('UPDATE cms_users SET password = ? WHERE id = ?', array($password, $user->get('id')));
+        db()->update('cms_users')->with(array(
+            'password' => $password
+        ))->where('id', $user->get('id'))->run();
         return true;
     }
     
     public function recovery($email) {
     
         $page = new Page;
-        $app = new App;
         $mail = new Mail;
         
-        $rows = $app->query('SELECT * FROM cms_users WHERE email = ?', $email)->fetchAll(PDO::FETCH_ASSOC);
+        $rows = db()->select()->from('cms_users')->where('email', $email)->fetchAll();
         $user_get = $rows[0];
         $token = json_decode($user_get['token']);
         if (empty($token)) $token = new StdClass;
@@ -313,7 +446,7 @@ class User {
             $error = 'EMAIL_UNKNOW';
             throw new Exception($error); 
             return false;
-        } else if (!empty($token->type) and $token->type !== 'recovery') {
+        } else if (!empty($token->type) and $token->type === 'confirm-mail') {
             $error = 'MAIL_NOT_CONFIRMED';
             throw new Exception($error);
             return false;
@@ -337,7 +470,9 @@ class User {
             $message = Translate::get('EMAIL_RESET_INSTRUCTIONS');
             $message = str_replace('%link%', $link, $message);
             $mail->send($toEmail, $subject, nl2br($message), true);
-            $app->query('UPDATE cms_users SET token = ? WHERE id = ?', array($user_token, $user_get['id']));
+            db()->update('cms_users')->with(array(
+                'token' => $user_token
+            ))->where('id', $user_get['id'])->run();
             return true;
         }    
         
@@ -351,9 +486,7 @@ class User {
         $valueD = trim($valueD);
         
         if ($type == 'password') {
-            $app = new App;
-            $rows = $app->query('SELECT id, username, password FROM cms_users WHERE id = ?', $user_id)->fetchAll(PDO::FETCH_ASSOC);
-            $user_get = $rows[0];
+            $user_get = db()->select()->from('cms_users')->where('id', $user_id)->fetch();
             if ($user_get['password'] != hash('sha256', $valueA . '^#$')) {
                 $error = 'OLD_PASSWORD_INCORRECT';
                 throw new Exception($error); 
@@ -368,32 +501,29 @@ class User {
                 return false;
             } else {
                 $password = hash('sha256', $valueB . '^#$');
-                $app = new App;
-                $app->query('UPDATE cms_users SET password = ? WHERE id = ?', array($password, $user_id));
+                db()->update('cms_users')->with(array(
+                    'password' => $password
+                ))->where('id', $user_id)->run();
                 return true;
             }
         } else if ($type == 'email') {
-            $app = new App;
-            $rows = $app->query('SELECT id, username, password FROM cms_users WHERE email = ?', $valueA)->fetchAll(PDO::FETCH_ASSOC);
-            $user_get = $rows[0];
+            $user_get = db()->select()->from('cms_users')->where('email', $valueA)->count();
             if ($valueA != $valueB) {
                 $error = 'EMAIL_NOT_THE_SAME';
                 throw new Exception($error); 
                 return false;
-            } else if (!preg_match('/^[[:alnum:][:punct:]]{3,32}@[[:alnum:]-.$nonASCII]{3,32}\.[[:alpha:].]{2,5}$/', $valueA)) {
+            } else if (!preg_match(self::REGEX_EMAIL, $valueA)) {
                 throw new Exception('EMAIL_INCORRECT'); 
                 return false;
-            } else if (count($user_get) > 0) {
+            } else if ($user_get > 0) {
                 throw new Exception('ALREADY_EMAIL'); 
                 return false;
             } else {
-                $config = new Config;
-                $mail = new Mail;
-                $app = new App;
-                if ($config->get('user->settings->verifymail', false)) {
+                if (with(new Config)->get('user.settings.verifymail', false)) {
+                    $mail = new Mail;
                     $token = new StdClass();
                     $token->key = substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 20);
-                    $token->type = 'new-mail'; 
+                    $token->type = 'confirm-mail'; 
                     $token->last = time(); 
                     $user_token = json_encode($token);
                     
@@ -407,22 +537,23 @@ class User {
                     $message = Translate::get('EMAIL_CONFIRMATION_INSTRUCTIONS');
                     $message = str_replace('%link%', $link, $message);
                     $mail->send($valueA, $subject, nl2br($message), true);
-                    $app->query('UPDATE cms_users SET token = ? WHERE id = ?', array($user_token, $user_id));
-
+                    db()->update('cms_users')->with(array(
+                        'token' => $user_token
+                    ))->where('id', $user_id)->run();
                 }
-                $app->query('UPDATE cms_users SET email = ? WHERE id = ?', array($valueA, $user_id));
+                db()->update('cms_users')->with(array(
+                    'email' => $valueA
+                ))->where('id', $user_id)->run();
                 return true;
             }
         } else if ($type == 'profil') {
-            $app = new App;
-            $profil = $app->query('SELECT profil FROM cms_users WHERE id = ?', $user_id)->fetchAll(PDO::FETCH_ASSOC);
-            $profil = $profil[0]['profil'];
+            $profil = db()->select('profil')->from('cms_users')->where('id', $user_id)->fetch();
+            $profil = $profil['profil'];
             if (!empty($profil))
                 $profil = json_decode($profil);
             else
                 $profil = new StdClass();
-            $placeholder = Translate::get('BIRTHDAY_PLACEHOLDER', 'YYYY/MM/DD');
-            if (!empty($valueA) or $valueA == $placeholder) {
+            if (!empty($valueA) or $valueA == 'YYYY/MM/DD') {
                 if (!preg_match('/^(19|20)[0-9]{2}\/[0-9]{2}\/[0-9]{2}$/', $valueA) or strtotime($valueA) >= time()) {
                     $error = 'INCORRECT_BIRTHDAY';
                     throw new Exception($error); 
@@ -473,7 +604,9 @@ class User {
                 unset($profil->country);
             }
             $json = json_encode($profil);
-            $result = $app->query('UPDATE cms_users SET profil = ? WHERE id = ?', array($json, $user_id));
+            $result = db()->update('cms_users')->with(array(
+                'profil' => $json
+            ))->where('id', $user_id)->run();
             if ($result) {
                 return true;
             } else {
@@ -522,13 +655,14 @@ class User {
                     return false;
                 }
 
-                if ($imageinfo[0] > 300 OR $imageinfo[1] > 300) {
+                if ($imageinfo[0] > 300 OR $imageinfo[1] > 300 or $imageinfo[0] < 30 OR $imageinfo[1] < 30) {
                     throw new Exception('PICTURE_SIZE');
                     return false;
                 }
                 
-                $app = new App;
-                $app->query('UPDATE cms_users SET picture_url = ? WHERE id = ?', array($src, $user_id));
+                db()->update('cms_users')->with(array(
+                    'picture_url' => $src
+                ))->where('id', $user_id)->run();
                 
                 if ( file_exists( AVATAR . $user_id . '.png' )) { unlink( AVATAR . $user_id . '.png'  ); }
                 if ( file_exists( AVATAR . $user_id . '.jpg' )) { unlink( AVATAR . $user_id . '.jpg'  ); }
@@ -600,8 +734,9 @@ class User {
                 if ( file_exists( AVATAR . $user_id . '.jpg' )) { unlink( AVATAR . $user_id . '.jpg'  ); }
                 if ( file_exists( AVATAR . $user_id . '.jpeg')) { unlink( AVATAR . $user_id . '.jpeg' ); }
                 
-                $app = new App;
-                $app->query('UPDATE cms_users SET picture_url = "" WHERE id = ?', array($user_id));
+                db()->update('cms_users')->with(array(
+                    'picture_url' => ''
+                ))->where('id', $user_id)->run();
                 
                 if (move_uploaded_file($valueA['tmp_name'], AVATAR . $user_id . $file_ext)) {
                     return true;
@@ -619,15 +754,15 @@ class User {
   
     public function getStatus($profil_id) {
         
-        $app = new App;
-        
-        if (!is_numeric($profil_id) and !ctype_digit($profil_id) or $profil_id <= 0) {
+        if (!is_int($profil_id) and !ctype_digit($profil_id) or $profil_id <= 0) {
             throw new Exception('INVALID_DATA'); 
             return false;
         }
         
         // Get database
-        $comments = $app->query('SELECT * FROM cms_user_status WHERE type="comment" AND state = 0 AND profil_id = ? ORDER BY date DESC', $profil_id);
+        $comments = db()->select()->from('cms_user_status')
+                        ->where('type', 'comment')->andWhere('state', 0)->andWhere('profil_id', $profil_id)
+                        ->orderBy('date', 'DESC')->fetchAll();
         return $comments;
     }
 
@@ -655,18 +790,14 @@ class User {
             return false;
         }
         
-        $app = new App;
-        
-        $rows = $app->query('SELECT id FROM cms_users WHERE id = ?', $profil_id)->fetchAll(PDO::FETCH_ASSOC);
-        $userExist = count($rows);
+        $userExist = db()->select('id')->from('cms_users')->where('id', $profil_id)->count();
 
         if ($userExist !== 1) {
             throw new Exception('UNKNOW_USER'); 
             return false;
         }
         
-        $lastPost_req = $app->query('SELECT MAX(date) as LAST FROM cms_user_status WHERE author_id = ?', $author_id);
-        $lastPost = $lastPost_req->fetch();
+        $lastPost = db()->select('MAX(date) as LAST')->from('cms_user_status')->where('author_id', $author_id)->fetch();
         $lastPost = $lastPost['LAST'];
 
         if ($lastPost > time()-60) {
@@ -674,45 +805,23 @@ class User {
             return false;
         }
         
-        $max_req = $app->query('SELECT MAX(id) as MAX FROM cms_user_status WHERE 1');
-        $max = $max_req->fetch();
-        $id = $max['MAX'] + 1;
-        
         if ($date == 0) {
             $date = time();
         }
             
-        $array = array(
-            'id' => $id,
+        return (bool) db()->insert('cms_user_status')->with(array(
             'type' => 'comment',
             'author_id' => $author_id,
             'profil_id' => $profil_id,
             'content' => $content,
             'state' => $state,
             'date' => $date
-        
-        );
-        
-        $parameters = array();
-        foreach($array as $key => $value) {
-            $parameters[] = $value;
-            if ( isset($query1) ) {
-                $query1 .= ', ' . $key;
-                $query2 .= ', ?';
-            } else {
-                $query1 .= $key;
-                $query2 .= '?';
-            }
-        }
- 
-        $query_result = $app->query('INSERT INTO cms_user_status('.$query1.') VALUES ('.$query2.')', $parameters);
-        return true;
+        ))->run(true);
 
     }
   
     public function deleteStatus($id, $profil_id, $checkUserPerm = false) {
-        $app = new App;
-        $rows = $app->query('SELECT * FROM cms_user_status WHERE id = ?', $id)->fetchAll(PDO::FETCH_ASSOC);
+        $rows = db()->select()->from('cms_user_status')->where('id', $id)->fetchAll();
         if (count($rows) !== 1) {
             throw new Exception('UNKNOW_STATUS'); 
             return false;
@@ -735,8 +844,8 @@ class User {
             }
         }
         
-        $rows = $app->query('DELETE FROM cms_user_status WHERE id = ?', $id);
-        if ($rows->rowCount() == 1) {
+        $rows = db()->delete('cms_user_status')->where('id', $id)->count();
+        if ($rows == 1) {
             return true;
         } else {
             throw new Exception('UNKNOW_STATUS'); 

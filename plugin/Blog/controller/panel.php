@@ -1,7 +1,9 @@
 <?php
 
-if ($user->get('permission') < $page->get('p_edit') or !$user->auth() ) {
-    $app->go( REQUEST_CURRENT );
+defined('IN_ENV') or die;
+
+if (!$user->canEdit($page)) {
+    go( REQUEST_CURRENT );
 }
 
 $edit_article = explode('/', REQUEST_ARGS);
@@ -11,48 +13,47 @@ $edit = false;
 if ( is_numeric( $edit_article[1] ) and $edit_article[1] >= 1 ) {
     $result = $blog->setup( $edit_article[1] );
     if ($result !== true) {
-        $error = '{@' . 'BLOG_UNKNOW_ARTICLE' . '}';
+        respond(false, 'BLOG_UNKNOW_ARTICLE');
         $hideForm = true;
     } else {
         $edit = $edit_article[1];
     }
 }
 
-if ( $_POST['send'] == 1 and $_POST['method'] == 'add' ) {
+if (POST_METHOD === 'add') {
     $date = strtotime( $_POST['date'] . ' ' . $_POST['hour'] );
     if ($date === false) {
-        $error = '{@' . 'BLOG_INVALID_DATE' . '}';
+        respond(false, 'BLOG_INVALID_DATE');
     } else {
         try {
-            $blog->addArticle($_POST['bbcode'], $_POST['title'], $user->get('id'), '', $_POST['state'], $date);
-            $success = '{@BLOG_' . 'ARTICLE_ADDED' . '}';
+            $blog->addArticle($_POST['bbcode'], $_POST['title'], $user->get('id'), $_POST['picture'], $_POST['state'], $date);
+            respond(true, 'BLOG_ARTICLE_ADDED');
             $hideForm = true;
         } catch (Exception $e) {
-            $error = '{@BLOG_' . $e->getMessage() . '}';
+            respond('BLOG', $e);
         }
     }
-} else if ( $_POST['send'] == 1 and $_POST['state'] == '2' ) {
+} else if (POST and $_POST['state'] === '2') {
     try {
         $blog->deleteArticle($_POST['id']);
-        $success = '{@BLOG_' . 'ARTICLE_REMOVED' . '}';
+        respond(true, 'BLOG_ARTICLE_REMOVED');
         $hideForm = true;
     } catch (Exception $e) {
-        $error = '{@BLOG_' . $e->getMessage() . '}';
-        $hideForm = true;
+        respond('BLOG', $e);
+        $hideForm = false;
     }
-} else if ( $_POST['send'] == 1 and $_POST['method'] == 'edit' ) {
+} else if (POST_METHOD === 'edit') {
     $date = strtotime( $_POST['date'] . ' ' . $_POST['hour'] );
     if ($date === false) {
-        $error = '{@' . 'BLOG_INVALID_DATE' . '}';
+        respond(false, 'BLOG_INVALID_DATE');
     } else {
         try {
-            $blog->editArticle($_POST['id'], $_POST['bbcode'], '', $_POST['title'], 0, $date, $_POST['state']);
-            $success = '{@BLOG_' . 'ARTICLE_EDITED' . '}';
+            $blog->editArticle($_POST['id'], $_POST['bbcode'], $_POST['picture'], $_POST['title'], 0, $date, $_POST['state']);
+            respond(true, 'BLOG_ARTICLE_EDITED');
         } catch (Exception $e) {
-            $error = '{@BLOG_' . $e->getMessage() . '}';
+            respond('BLOG', $e);
         }
     }
 }
 
 include ( $path . 'view/panel.php');
-$content = $html;

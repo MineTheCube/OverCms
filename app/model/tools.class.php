@@ -1,7 +1,9 @@
 <?php
 
+// Tools Class is deprecated
+
 Class Tools {
-    
+
     public function reldate( $time ) {
         if ($time > time())
             return '{@IN_THE_FUTURE}';
@@ -45,13 +47,41 @@ Class Tools {
         $endIn = strpos($data, $tagClose, $startIn);
         $endOut = strpos($data, $tagClose, $startIn) + strlen($tagClose);
         
-        if ($endIn and $endOut) {
+        if ($endIn !== false and $endOut !== false) {
             $result[0] = substr($data, $startOut, $endOut - $startOut);
             $result[1] = substr($data, $startIn, $endIn - $startIn);
             return $result;
         }
         return false;
         
+    }
+
+    public function removeTextBetween($data, $tagOpen, $tagClose = null) {
+    
+        if ($tagClose === null) {
+            $tagClose = $tagOpen;
+        }
+        
+        $startIn = strpos($data, $tagOpen) + strlen($tagOpen);
+        $startOut = strpos($data, $tagOpen);
+        
+        $endIn = strpos($data, $tagClose, $startIn);
+        $endOut = strpos($data, $tagClose, $startIn) + strlen($tagClose);
+        
+        if ($endIn !== false and $endOut !== false) {
+            return substr($data, 0, $startOut) . substr($data, $endOut);
+            return $result;
+        }
+        return $data;
+        
+    }
+
+    function removeText($data, $arr) {
+        return strtr($data, $arr, '');
+    }
+
+    function replaceText($data, $arr) {
+        return strtr($data, $arr);
     }
 
     public function loadTextEditor($name = 'texteditor', $content = null) {
@@ -65,14 +95,17 @@ Class Tools {
         if (!file_exists( $pathToSql )) {
             return false;
         }
-        $app = new App;
         $lines = file( $pathToSql );
         foreach ($lines as $line) {
+            if (substr($line, 0, 8) == '--MYSQL ' and DATABASE == "mysql")
+                $line = substr($line, 8);
+            if (substr($line, 0, 9) == '--SQLITE ' and DATABASE == "sqlite")
+                $line = substr($line, 9);
             if (substr($line, 0, 2) == '--' || $line == '')
                 continue;
             $templine .= $line;
             if (substr(trim($line), -1, 1) == ';') {
-                $result = $app->query($templine);
+                $result = db()->query($templine);
                 $templine = '';
                 if ($result === false) {
                     return false;
@@ -82,11 +115,11 @@ Class Tools {
         return true;
     }
 
-    public function parse($text, $args) {
+    public function parse($text, $args, $tag = '%') {
         if (!is_array($args)) {
             return $text;
         }
-        $args = array_combine(array_map(create_function('$k', 'return "%".$k."%";'), array_keys($args)), $args);
+        $args = array_combine(array_map(create_function('$k', 'return "'.$tag.'".$k."'.$tag.'";'), array_keys($args)), $args);
         return strtr($text, $args);
     }
     

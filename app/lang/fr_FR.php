@@ -1,45 +1,92 @@
 <?php
 
+/*
+ * Lang: Français
+ * Author: MTC
+ * CMS Version: 0.6.0
+ *
+ */
+
+$langname = 'Français';
+
 $lang = array();
 
 // General
-$lang = array_merge($lang, array(
+$lang += array(
   'SEARCH_USER' => 'Rechercher un membre',
   'PREVIOUS' => 'Précédent',
   'NEXT' => 'Suivant',
   'PAGE_PREVIOUS' => 'Page précédente',
   'PAGE_NEXT' => 'Page suivante',
   'BACK_TO_TOP' => 'Retour en haut',
-  'BIRTHDATE_PLACEHOLDER' => 'jj-mm-aaaa',
   'RESET_YOUR_PASSWORD' => 'Réinitialiser votre mot de passe',
   'CONTACT_US' => 'Nous contacter:',
+  'LOADING' => 'Chargement..',
+  'IGNORE' => 'Ignorer',
+  'CLOSE' => 'Fermer',
+  'BACK' => 'Retour',
   'MAN' => 'Homme',
   'WOMAN' => 'Femme',
   'OR' => 'ou',
   'BY' => 'par',
-  'AT' => 'à'
-));
+  'AT' => 'à',
+);
+
+// Specific
+$lang += array(
+  'GROUP_0' => 'Visiteur',
+  'GROUP_1' => 'Membre',
+  'GROUP_2' => 'VIP',
+  'GROUP_3' => 'Modérateur',
+  'GROUP_4' => 'Administrateur',
+  'GROUP_9' => 'Fondateur',
+  'PLUGIN' => 'Plugin',
+);
 
 // Error
-$lang = array_merge($lang, array(
+$lang += array(
   'ERROR' => 'Erreur',
   'UNKNOW_ERROR' => 'Une erreur est survenue..',
   'INVALID_URL' => 'Lien invalide',
   'INVALID_TOKEN' => 'Une erreur de sécurité s\'est produite',
   'NO_PERMISSION' => 'Vous n\'avez pas la permission',
-  'PAGE_NOT_FOUND' => 'Page inconnue',
+  'PAGE_403' => 'Accès refusé',
+  'PAGE_404' => 'Page introuvable',
+  'PAGE_500' => 'Une erreur est survenue',
+  'PAGE_403_DESC' => 'Vous n\'avez pas la permission d\'accéder à cette page.',
+  'PAGE_404_DESC' => 'La page que vous cherchez n\'existe pas, ou plus, ou a peut-être été déplacée.',
+  'PAGE_500_DESC' => 'Une erreur s\'est produite lors de l\'affichage de la page...',
   'FATAL_ERROR' => 'Erreur fatale',
-  'ERROR_SQLITE_MISSING' => 'SQlite n\'est pas implémenté sur votre hébergeur Web.',
-  'ERROR_SQLITE_INCORRECT' => 'Impossible de se connecter à la base de donnée.',
   'ERROR_MISSING_FILE' => 'Fichier manquant: %file%.',
   'ERROR_MISSING_PLUGIN' => 'Plugin manquant: %plugin%.',
   'ERROR_PLUGIN_VERSION' => 'Le plugin suivant n\'est pas compatible avec votre version du CMS: ',
   'ERROR_PLUGIN_NOT_FOUND' => 'Le plugin suivant n\'a pas été trouvé: ',
-  'ERROR_CANNOT_LOAD_PAGE' => 'Impossible de charger la page demandée..'
-));
+  'ERROR_PLUGIN_DEPENDENCIES' => 'Des plugins sont manquants pour que le plugin suivant fonctionne: ',
+  'ERROR_EMPTY_PLUGIN' => 'Le plugin ne semble pas fonctionner..',
+  'ERROR_NO_PLUGIN' => 'Aucun plugin défini pour cette page.',
+  'ERROR_CANNOT_LOAD_PAGE' => 'Impossible de charger la page demandée..',
+  'ERROR_SQLITE_MISSING' => 'SQlite n\'est pas implémenté sur votre hébergeur Web',
+  'ERROR_SQLITE_INCORRECT' => 'Impossible d\'utiliser la base de données SQLite',
+  'ERROR_SQLITE_MISSING_INSTALL_FILE' => 'Les fichiers d\'installation de SQLite sont manquants',
+  'ERROR_SQLITE_DATABASE' => 'Impossible de se connecter à la base de données SQLite',
+  'ERROR_MYSQL_MISSING' => 'MySQL n\'est pas implémenté sur votre hébergeur Web',
+  'ERROR_MYSQL_INCORRECT' => 'Impossible d\'utiliser la base de données MySQL',
+  'ERROR_MYSQL_MISSING_INSTALL_FILE' => 'Les fichiers d\'installation de SQLite sont manquants',
+  'ERROR_MYSQL_DATABASE' => 'Impossible de se connecter à la base de données MySQL',
+  'ERROR_CONFIG_DATABASE' => 'La base de données est mal configurée',
+);
+
+// Success
+$lang += array(
+    'MODIFICATION_SUCCESSFUL' => 'Les modifications ont été enregistrées !',
+    'LOGIN_SUCCESSFUL' => 'Connexion réussie !',
+    'LOGOUT_SUCCESSFUL' => 'Déconnexion réussie !',
+    'REGISTRATION_SUCCESSFUL' => 'Votre inscription est terminée !',
+    'RECOVERY_SUCCESSFUL' => 'Les instructions vous ont été envoyées par mail',
+);
 
 // Buttons
-$lang = array_merge($lang, array(
+$lang += array(
   'BTN_SEARCH' => 'Rechercher',
   'BTN_CANCEL' => 'Annuler',
   'BTN_REGISTER' => 'S\'inscrire',
@@ -47,19 +94,22 @@ $lang = array_merge($lang, array(
   'BTN_REMEMBER' => 'Rester connecté',
   'BTN_RESET' => 'Réinitialiser le mot de passe',
   'BTN_CHANGE_AVATAR' => 'Changer mon image de profil',
+  'BTN_ADD' => 'Ajouter',
   'BTN_EDIT' => 'Modifier',
   'BTN_REMOVE' => 'Supprimer',
   'BTN_CLOSE' => 'Fermer',
   'BTN_SAVE' => 'Enregistrer',
+  'BTN_CHOSE' => 'Choisir',
   'BTN_OPTIONS' => 'Options',
+  'BTN_OK' => 'Valider',
   'BTN_NO' => 'Non',
   'BTN_YES' => 'Oui',
   'BTN_I_REMEMBER' => 'Finalement je m\'en souviens !',
   'BTN_FORGOT_PASSWORD' => 'Mot de passe oublié ?'
-));
+);
 
 // Text editor
-$lang = array_merge($lang, array(
+$lang += array(
   'TE_BOLD' => 'Gras',
   'TE_ITALIC' => 'Italique',
   'TE_UNDERLINE' => 'Souligné',
@@ -79,10 +129,12 @@ $lang = array_merge($lang, array(
   'TE_LIST_ELEMENT' => 'Element de liste',
   'TE_RENDER' => 'Prévisualiser',
   'TE_MORE' => 'Plus d\'options'
-));
+);
 
 // Alerts
-$lang = array_merge($lang, array(
+$lang += array(
+  'ALERT_ERROR' => 'Une erreur est survenue..',
+  'ALERT_SUCCESS' => 'Opération effectuée avec succès !',
   'USERNAME_EMPTY' => 'Vous n\'avez pas entré de nom d\'utilisateur',
   'PASSWORD_EMPTY' => 'Vous n\'avez pas entré de mot de passe',
   'EMAIL_EMPTY' => 'Vous n\'avez pas entré d\'adresse email',
@@ -101,10 +153,8 @@ $lang = array_merge($lang, array(
   'EMAIL_NOT_THE_SAME' => 'Les adresses emails sont différentes',
   'USER_UNKNOWN' => 'Ce membre n\'existe pas',
   'PASSWORD_INCORRECT' => 'Mot de passe incorrect',
-  'REGISTRATION_SUCCESSFUL' => 'Votre inscription est terminée !',
   'PLEASE_CONFIRM_MAIL' => 'Votre inscription est terminée, vous devez désormais confirmer votre adresse email !',
-  'RECOVERY_SUCCESSFUL' => 'Les instructions vous ont été envoyées par mail',
-  'MODIFICATION_SUCCESSFUL' => 'Les modifications ont été enregistrées !',
+  'PLEASE_CONFIRM_NEW_MAIL' => 'Vous devez désormais confirmer votre adresse email !',
   'AVATAR' => 'Image de profil',
   'PROFIL_OF' => 'Profil de',
   'PICTURE_FILE_SIZE' => 'Votre image est trop volumineuse, maximum: 100 Ko',
@@ -112,10 +162,10 @@ $lang = array_merge($lang, array(
   'WRONG_PICTURE_FORMAT' => 'Votre image doit être en format png, jpg ou jpeg',
   'NOT_A_PICTURE' => 'L\'image envoyée est incorrecte',
   'PICTURE_DOESNT_EXIST' => 'L\'image n\'existe pas'
-));
+);
 
 // Date
-$lang = array_merge($lang, array(
+$lang += array(
   'Monday'    => 'Lundi',
   'Tuesday'   => 'Mardi',
   'Wednesday' => 'Mercredi',
@@ -135,6 +185,27 @@ $lang = array_merge($lang, array(
   'October'   => 'Octobre',
   'November'  => 'November',
   'December'  => 'Décembre',
+  'Mo' => 'Lu',
+  'Tu' => 'Ma',
+  'We' => 'Me',
+  'Th' => 'Je',
+  'Fr' => 'Ve',
+  'Sa' => 'Sa',
+  'Su' => 'Di',
+  'Jan' => 'Jan',
+  'Feb' => 'Fév',
+  'Mar' => 'Mar',
+  'Apr' => 'Avr',
+  'May' => 'Mai',
+  'Jun' => 'Jui',
+  'Jul' => 'Jui',
+  'Aug' => 'Aoû',
+  'Sep' => 'Sep',
+  'Oct' => 'Oct',
+  'Nov' => 'Nov',
+  'Dec' => 'Déc',
+  'LAST_7_DAYS' => '7 derniers jours',
+  'LAST_30_DAYS' => '30 derniers jours',
   'IN_THE_FUTURE' => 'Dans le futur',
   'LESS_THAN_A_MINUTE' => 'moins d\'une minute',
   'RELATIVE_DATE_PREFIX' => 'Il y a ',
@@ -153,20 +224,20 @@ $lang = array_merge($lang, array(
   'WEEKS' => 'semaines',
   'MONTHS' => 'mois',
   'YEARS' => 'ans'
-));
+);
 
 // Email
-$lang = array_merge($lang, array(
+$lang += array(
   'EMAIL_RESET_SUBJECT' => 'Réinitialiser votre mot de passe',
   'EMAIL_RESET_INSTRUCTIONS' => 'Vous avez oublié votre mot de passe ?\n\nSi c\'est effectivement le cas, cliquez sur le lien suivant pour réinitialiser votre mot de passe, ou copiez le lien dans votre navigateur:\n%link%\n\nSi vous n\'avez pas demandé la réinitialisation de votre mot de passe, vous pouvez ignorer cet e-mail.',
   'EMAIL_NEW_PASSWORD_SUBJECT' => 'Nouveau mot de passe',
   'EMAIL_NEW_PASSWORD_INSTRUCTIONS' => 'Viens sur: %link%\n\nTon mdp: %password%',
   'EMAIL_CONFIRMATION_SUBJECT' => 'Confirme ton mail',
   'EMAIL_CONFIRMATION_INSTRUCTIONS' => 'Clic: %link%'
-));
+);
 
 // Forms
-$lang = array_merge($lang, array(
+$lang += array(
   'STAY_LOGGED_IN' => 'Rester connecté',
   'RESET_PASSWORD' => 'Réinitialiser le mot de passe',
   'NEW_PASSWORD' => 'Nouveau mot de passe',
@@ -191,10 +262,11 @@ $lang = array_merge($lang, array(
   'URL_PICTURE' => 'Url de l\'image',
   'TOO_MUCH_NEWLINE' => 'Il y a trop de retour à la ligne',
   'MAIL_NOT_CONFIRMED' => 'Vous devez confirmer votre adresse email'
-));
+);
 
 // User
-$lang = array_merge($lang, array(
+$lang += array(
+  'USER' => 'Utilisateur',
   'USERNAME' => 'Nom d\'utilisateur',
   'PASSWORD' => 'Mot de passe',
   'UNKNOW' => 'Inconnu',
@@ -221,4 +293,4 @@ $lang = array_merge($lang, array(
   'UNKNOW_STATUS' => 'Le status est inconnu',
   'USER_NEED_SEARCH' => 'Recherchez un membre ou connectez vous !',
   'ADD_COMMENT' => 'Ajouter un commentaire'
-));
+);
