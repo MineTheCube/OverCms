@@ -38,17 +38,19 @@ Installation
 1. [Download][1] the ZIP file
 2. Unzip the content and upload it to your web host
 3. Installation is done, now you can browse your website with initial configuration
-4. To edit data of CMS, access to ```sql.php``` (from internet, not locally)
+4. To edit data of CMS, access to ```admin/``` (from internet, not locally)
 
 Administrator account:
 - Username: admin
 - Password: admin
 
+Warning: the CMS is not ready for production use, as anyone can edit database through ```admin/``` !
+
 License
 ---------
 
-For the moment, the project is All Rights Reserved, which means you CANNOT distribute or modify it without permission, but you can obviously install and use it.
+For the moment, the project is All Rights Reserved, which means you CANNOT distribute or resell it without permission, but you can obviously install and use it.
 
 > Copyright 2014 - MineTheCube
 
-[1]: https://github.com/MineTheCube/OverCms/archive/master.zip
+[1]: https://github.com/MineTheCube/OverCms/releases
